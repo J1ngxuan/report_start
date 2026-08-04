@@ -1,0 +1,26 @@
+% !Mode:: "TeX:UTF-8"
+% 默认配置：哈尔滨校区硕士开题报告。
+% 可选学位类型：type=doctor|master|bachelor
+% 可选校区：campus=harbin|shenzhen|weihai
+\documentclass[fontset=fandol,toc=true,type=master,stage=opening,campus=harbin]{hithesisart}
+
+\usepackage{needspace}
+\graphicspath{{figures/}}
+
+% 用灰色文字标出待填写位置，完成撰写后可将本命令改为直接输出正文。
+\newcommand{\placeholder}[1]{%
+  \par\noindent\textcolor{gray}{【填写提示：#1】}\par
+}
+
+\begin{document}
+\input{front/cover}
+\hypersetup{pageanchor=false}
+\makecover
+\hypersetup{pageanchor=true}
+\pagenumbering{arabic}
+\input{body/proposal}
+\end{document}
+
+% Local Variables:
+% TeX-engine: xetex
+% End:
