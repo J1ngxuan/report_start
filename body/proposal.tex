@@ -3,82 +3,937 @@
 \section{课题来源及研究的目的和意义}
 
 \subsection{课题来源与研究背景}
-\placeholder{说明课题来源、研究背景及拟解决问题的现实或理论依据。}
+\placeholder{课题来源：请填写具体项目或工程需求名称及编号。}
+
+工业制造中的装配、插接和精密操作，要求机器人在有限作业空间内同时处理几何偏差、接触力变化与环境扰动。与自由空间轨迹跟踪不同，这类任务的执行过程通常包含接近、对准、接触搜索和约束运动等阶段。工件初始位姿、尺寸公差、摩擦系数或环境刚度的变化，都可能改变接触状态及后续可行动作。策略需要及时利用视觉、力觉、触觉或机器人本体状态修正动作，以降低对准失败、卡滞、碰撞或接触力超限的风险。因此，工业精密操作的评价需要同时关注任务完成情况，并综合考虑精度、节拍、设备安全和失效代价等约束。
+
+传统工业机器人系统多依赖离线标定、人工编程与事先设计的控制规则。当任务几何、工件参数与接触条件较为稳定时，这一路线具有行为边界明确、便于工程验证等优点。但是，显式模型对真实环境接触不确定性的覆盖范围受限；一旦换型、夹具偏差或传感器误差超出预设范围，轨迹与控制参数往往需要重新调整。高精度装配研究已表明，基于状态反馈的学习策略可以把复杂的接触调整转化为数据或交互驱动的策略优化问题\cite{levine2015gps,inoue2017assembly}。这为处理未建模扰动提供了新的技术途径，也同时引入了数据获取、策略稳定性和安全验证等新问题。
+
+本研究将“具身策略”界定为由感知、决策、动作以及机器人--环境交互共同构成的闭环系统。如图\ref{fig:embodied-control-loop}所示，视觉、力/触觉与本体状态构成策略输入，策略输出需经过动作限幅、柔顺控制或安全监控后作用于机器人；机器人与工件之间的接触结果又被重新感知，从而形成连续的观测--动作--反馈链路。精度与公差决定任务的可接受结果，控制频率与推理延迟影响生产节拍，接触力和失效后果则限定策略的探索边界。将这些约束纳入策略建模与评价，可以使学习结果与工业部署需求建立可检查的对应关系。
+
+\begin{figure}[htbp]
+  \centering
+  \input{figures/embodied-control-loop}
+  \caption{工业精密操作中的具身策略闭环}
+  \label{fig:embodied-control-loop}
+\end{figure}
+
+在任务适应范围方面，工业部署既要求策略处理同一工艺内的连续扰动，也可能要求其在换型后复用已有知识。面向单一工位训练的视觉动作策略可以减少语言与任务规划所需的数据负担，但其能力往往与训练对象、相机视角和动作接口绑定；跨任务或跨本体策略扩大了可复用范围，同时增加了预训练数据、动作归一化、算力和推理时延方面的要求。尤其对于接触阶段，高频力觉或触觉反馈可作为语义对象识别的重要补充；通用任务上的迁移结果还需在小公差条件下验证其闭环稳定性。由此可见，策略规模与输入模态应由目标任务决定：当研究侧重单一工位操作，且语言指令和跨任务迁移的作用有限时，可优先建立轻量、可复现的多模态策略基线；当新增能力与工业需求相对应时，再引入更复杂的通用策略模型。
+
+在学习路线中，模仿学习与强化学习分别解决不同问题。模仿学习利用专家示教建立从观测到动作的初始映射，能够使策略先获得基本可执行行为。已有研究利用几何表示、概率运动原语及多模态反馈组织精密装配示教，说明示教可以在限定行为范围的同时保留部分任务结构\cite{qin2019precision,zang2023promp}。但是，示教数据对初始状态、扰动和失败恢复过程的覆盖范围有限；数据采集还需要人员操作、质量审查与时序对齐。当真实观测偏离示教分布时，纯模仿策略可能累积动作误差，对卡滞恢复和新扰动的适应仍需额外示教覆盖或后续优化机制支撑。
+
+强化学习可根据任务奖励评价轨迹，并在交互中改善示教覆盖有限的行为。这一特点使其适合考察成功率、节拍或接触力等任务指标，但随机探索与真机安全要求之间存在直接冲突。对接触丰富操作的综述显示，样本效率、奖励建模、仿真到真机迁移与安全约束是该类方法的关键问题\cite{elguea2023review}。近端策略优化（Proximal Policy Optimization, PPO）通过裁剪目标约束单次策略更新幅度\cite{schulman2017ppo}，可作为一种待检验的标准基线。其在稀疏奖励、探索效率和安全约束方面的表现仍需通过任务化实验检验，并在统一条件下与候选策略优化方法进行比较。
+
+因此，将模仿策略作为强化优化的初始先验，有望提高训练初期有效动作的比例；强化学习则可以在任务奖励约束下考察先验之外的策略改善空间。现有示教增强强化学习和残差强化学习工作已展示多种融合方式\cite{nair2018demonstrations,johannink2019residual,wu2019demonstration}，但不同研究在算法、控制接口、示教质量和交互预算上存在差异，示教先验对PPO的实际作用仍需在统一条件下验证。本研究需要在统一任务定义、观测与动作接口、训练预算及评价指标下，分别识别示教对初始性能、探索效率、训练稳定性和最终策略质量的影响。这一需求构成本课题的直接研究情境。
 
 \subsection{研究目的与意义}
-\placeholder{分别阐明研究目标，以及研究的理论意义、工程价值或应用前景。}
+本研究的总体目的是，面向具有位姿偏差、接触不确定性与安全约束的工业精密操作，建立“任务与评价建模--示教先验学习--强化策略优化--仿真与真机验证”的研究链路。该链路以两个可检验问题为主线：示教策略能否为后续强化学习提供稳定、可执行的初始先验；在限定交互与安全边界下，强化优化能否保留基本操作能力，并改善示教覆盖有限状态下的任务表现。具体目的包括以下四个方面。
+
+\begin{enumerate}[label=\textup{(\arabic*)},leftmargin=2.5em,itemsep=0.25em,topsep=0.25em]
+  \item 界定目标任务的观测、动作、初始状态、环境扰动与安全约束，建立包含任务完成、学习过程、泛化鲁棒性和部署可靠性的统一评价协议，为后续方法比较提供共同边界。
+  \item 根据视觉、力/触觉与本体状态等可用信息构建示教数据表示，训练可重复的模仿策略基线，分析数据覆盖、示教噪声与观测分布变化对策略的影响。VLA模型的采用将以目标任务确有语言条件或跨任务迁移需求、且数据与算力条件能够支撑为前提。
+  \item 以模仿策略参数或行为作为初始先验，建立标准PPO对照基线，并在统一交互预算下检查先验遗忘、稀疏奖励、动作平滑性或样本效率等方面的实际问题。候选示教约束、奖励设计或安全机制将与可观测问题一一对应，并通过统一对照实验评估PPO与其他策略优化方法的适用条件。
+  \item 通过纯模仿策略、从零训练的强化策略、模仿初始化基线与候选联合方法之间的对比和消融，分别评估初始性能、收敛过程、交互成本、任务结果及扰动下的性能退化。候选方法通过仿真对比后，还需经过安全审查与降级保护才进入真机验证。
+\end{enumerate}
+
+图\ref{fig:research-entry-route}给出了上述研究目的之间的依赖关系。任务与评价协议先确定学习问题和比较边界；示教数据用于形成可执行的模仿先验；标准PPO及与问题对应的候选机制用于考察后续优化空间；仿真、安全准入与真机实验共同界定方法的有效性范围。多维评价结果还将反向支持任务定义、奖励与约束的修正，并以多次试验及多维指标共同支撑方法结论。
+
+\begin{figure}[htbp]
+  \centering
+  \input{figures/research-entry-route}
+  \caption{示教先验与强化优化的研究切入点}
+  \label{fig:research-entry-route}
+\end{figure}
+\FloatBarrier
+
+评价设计本身也是本研究的重要组成部分。一致的初始状态范围、训练步数、成功判据和安全终止规则，是解释策略差异的基本前提。为此，本研究拟在方法训练前固定数据划分、交互预算和扰动等级，并采用多个随机种子描述训练离散程度；真机试验除报告任务成功外，还将记录节拍、接触力、安全触发和人工接管等信息。统一协议既服务于算法比较，也用于限定结论能够外推的任务条件，并通过多随机种子与多维指标提高证据的代表性。
+
+本研究的方法意义在于，将“模仿初始化后性能提高”这一概括性表述拆分为若干可检验问题。在相同的任务接口、数据划分、交互预算和安全条件下，消融对比可以区分示教先验对初始行为、有效探索、训练稳定性和最终策略质量的不同影响。这种分解有助于说明联合方法在哪些任务条件和预算范围内有效，也有助于识别改善来自示教、奖励、控制先验还是额外交互。本研究拟为工业精密操作中示教与强化学习的组合方式提供可复现的实验证据，并审慎评估其适用范围。
+
+本研究的工程意义在于，尝试在可执行性、继续优化能力与部署风险之间建立可操作的权衡。示教先验若能提高训练初期有效动作的比例，可能降低获得可用策略所需的安全干预；候选强化优化若能在限制范围内处理示教覆盖有限的扰动，则有望减少换型或环境变化时的重复编程与调参。与此同时，通过统一记录节拍、接触力、安全违规、交互成本与扰动退化曲线，研究结果可以同时覆盖仿真性能与实际部署需求，为部署判断提供更直接的依据。
+
+综上，本课题的研究必要性主要源于工业精密操作中数据有限、探索受限与多目标评价之间的具体矛盾。为明确示教学习、强化学习及其联合优化的已有解决路径与适用边界，后续将按照问题与方法类型对国内外相关研究进行梳理与评述。
 
 \section{国内外研究现状及分析}
 
-\subsection{国外研究现状}
-\placeholder{按研究脉络归纳国外代表性工作，并在相应论述后标注文献。}
+\subsection{工业具身任务的对象边界与技术演进}
 
-\subsection{国内研究现状}
-\placeholder{归纳国内研究进展、代表性方法与主要结论。}
+本研究所称的工业具身任务，是指机器人利用视觉、力觉、触觉和本体状态感知工件与环境，并在装配、插接或精密操作过程中闭环产生动作的策略学习问题。相较于已知工件位姿与动力学条件下的轨迹跟踪，该对象更强调多模态反馈与接触状态变化；相较于以语义理解和长时序规划为主的家庭服务机器人任务，该对象更关注装配公差、接触控制与工业节拍。工业场景通常同时受装配公差、接触力安全边界、生产节拍和失效代价约束；当工件位姿、摩擦或刚度发生变化时，预编程轨迹对未建模接触的响应能力受到预设范围限制。因此，相关研究以闭环策略为核心，重点是在可接受的数据与交互成本下利用多模态反馈、适应环境扰动并满足安全和节拍要求。
 
-\subsection{研究现状评述}
-\placeholder{综合比较已有工作的贡献与不足，凝练尚待解决的问题，并引出本课题。}
+接触丰富操作的早期学习研究，主要通过结构化策略搜索降低直接在高维策略空间中探索的难度。Levine等将引导策略搜索用于接触操作，利用局部轨迹优化为神经网络策略提供监督信号，说明了数据驱动策略处理未建模接触的可能性\cite{levine2015gps}。Inoue等进一步在高精度装配中采用深度强化学习，使策略根据状态反馈学习探索与插入动作\cite{inoue2017assembly}。这些工作把复杂的接触调整转化为可从交互中获得的策略，但其效果仍与任务坐标系、动作接口和奖励信号密切相关。
 
-\section{前期研究基础}
+此后，研究重心逐步从单一任务控制器扩展到融合先验结构的可迁移技能。Johannsmeier等以技能形式化、元参数学习和自适应控制组织机器人操作\cite{johannsmeier2019framework}；Scherzinger等从接触轨迹中提取与机器人构型相对解耦的技能表示\cite{scherzinger2019contact}；Hamaya等则借助机械柔顺性与环境约束，将学习问题投影到较低维的操作空间\cite{hamaya2020softness}。残差强化学习保留已有控制器，并学习基础控制器之外的修正量，为工业任务提供了一种具有明确降级路径的融合思路\cite{johannink2019residual}。元强化学习、操作原语序列以及视觉—触觉策略，又分别从少量真机适应、长时序组合和接触状态可观测性方面扩展了方法边界\cite{schoettler2020meta,vuong2021primitives,royo2023tactile}。针对对称工件导致的部分可观测问题，Nguyen等在策略中引入对称先验与柔性腕部，表明结构先验和机械顺应性可以共同缩小学习空间\cite{nguyen2024symmetry}。
 
-\placeholder{概述已完成的理论分析、试验论证、数据准备、平台建设或预研结果。}
+总体而言，已有工作证实了学习策略适应未建模接触和工件偏差的潜力，也形成了“策略学习与结构先验协同”的技术趋势。但各研究的感知模态、动作频率、底层控制接口、装配公差与成功判据存在差异，成功率的横向比较需要统一或明确说明试验条件。这一判断构成后续评述示教策略、强化学习及二者联合优化的共同前提。
 
-\section{主要研究内容与研究目标}
+\subsection{VLA的模仿学习微调研究现状}
 
-\subsection{主要研究内容}
-\placeholder{围绕核心问题分层说明拟开展的研究工作，宜使用将来时态，避免仅复述论文目录。}
+基于示教的模仿学习通过专家轨迹建立观测到动作的映射，能够在不进行大范围随机探索的条件下为工业机器人提供可执行的初始策略。早期方法通常将任务分解为接近、搜索、对准和插入等阶段，再以动态或概率运动原语显式表示轨迹分布。Yang等建立了从人到机器人的自适应操作技能学习框架\cite{yang2019adaptive}，Qin等将显微视觉与力反馈用于精密装配技能学习\cite{qin2019precision}，哈工大团队则利用任务几何表示与概率运动原语处理轴孔装配示教中的空间变化\cite{zang2023promp}。这类方法对少量数据较为友好，且中间变量便于解释，但依赖人工分段、任务坐标系或接触模式先验，难以直接复用到对象、场景和指令持续变化的任务中。因此，相关研究逐步转向以多模态观测为输入、以神经网络统一表示策略的端到端模仿学习。
+
+端到端行为克隆减少了人工设计技能阶段的需求，其核心问题也由“如何编码任务结构”转变为“如何利用有限示教表示长时依赖与多峰动作”。RoboMimic基准对不同质量的人类示教和多类离线学习算法进行了系统比较，表明观测空间、历史信息、示教质量与模型选择都会影响策略性能\cite{mandlekar2022robomimic}。动作分块Transformer（Action Chunking with Transformers, ACT）不再逐时刻独立预测动作，而是一次生成一段动作序列，并结合时序集成降低单步行为克隆的误差累积，在双臂精细操作中验证了动作分块的有效性\cite{zhao2023act}。扩散策略进一步将动作序列建模为条件去噪过程，用概率生成方式表达同一观测下的多种合理动作\cite{chi2023diffusion}。ACT与扩散策略由此形成两条互补路线：前者突出动作分块与长时序建模，后者突出连续动作分布的生成表达；二者共同为VLA模型中的动作序列解码奠定了方法基础。
+
+扩散策略的总体结构如图~\ref{fig:diffusion-policy-overview}所示。近期图像与机器人状态首先构成条件观测，模型随后通过多步去噪生成动作序列，控制器执行其中的近期动作，并在获得新观测后重新规划。该闭环同时利用观测历史、动作分块和概率生成过程处理时序误差与多峰动作分布，也说明采用生成式动作头时需要同步评估推理时延、动作连续性与任务成功率。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{diffusion-policy-overview.pdf}
+  \caption{扩散视觉动作策略的观测条件化与动作序列生成框架\cite{chi2023diffusion}}
+  \label{fig:diffusion-policy-overview}
+\end{figure}
+
+视觉--语言--动作（Vision-Language-Action, VLA）模型在上述视觉动作策略基础上引入语言条件和视觉语言预训练知识，并通过任务示教微调把通用表征转化为机器人动作。Open X-Embodiment聚合多机构、多任务真机数据并训练RT-X模型，展示了跨本体数据协同训练的可行性\cite{openx2024rtx}。围绕双臂操作与部署效率，RDT-1B采用扩散Transformer和统一动作空间，从多机器人数据中学习可迁移的双臂操作表示\cite{liu2025rdt}；TinyVLA则将轻量多模态骨干与扩散动作头结合，把数据效率和推理速度纳入模型设计\cite{wen2025tinyvla}。国内相关研究还通过对象中心指令增强和快慢思考框架，分别改善空间指令利用与高低层推理分工\cite{wen2024object,zhu2024fastslow}。这些工作表明，VLA模仿学习微调并非简单扩大行为克隆模型，而是利用预训练视觉语言表征、跨任务机器人数据和任务示教共同构建动作策略；其主要技术分歧集中在动作表示、预训练数据组织和下游微调方式。
+
+在动作表示方面，Physical Intelligence提出的\(\pi_0\)将预训练视觉语言模型与独立的动作专家结合，动作专家以流匹配目标生成连续动作块，从而在保留语言与视觉语义表征的同时适配高频、连续的机器人控制\cite{black2024pi0}。其训练过程区分覆盖多任务、多本体数据的预训练与面向下游技能的后训练：前者用于获得可迁移的通用能力，后者使用质量更高的任务示教形成稳定执行策略。由ACT到\(\pi_0\)的技术推进并非简单增加模型规模，而是将动作分块从单任务行为克隆的输出形式扩展为VLA动作专家的连续生成对象，并把任务级示教微调纳入通用模型的训练链路。
+
+随后，\(\pi_0\)-FAST采用频域动作序列标记化（Frequency-space Action Sequence Tokenization, FAST），将高频连续轨迹压缩为离散动作标记，以自回归方式提高大规模VLA训练效率\cite{pertsch2025fast}。该方法与\(\pi_0\)的流匹配路线形成连续动作生成和离散动作建模两种实现。\(\pi_{0.5}\)在此基础上进一步整合两条路线：预训练阶段采用FAST离散动作标记，以便将机器人动作数据与图文、目标检测和高层语义预测等异构任务共同训练；后训练阶段加入与\(\pi_0\)一致的流匹配动作专家，以连续动作块支持实时控制\cite{black2025pi05}。在推理阶段，\(\pi_{0.5}\)先根据视觉观测与总体指令预测语言形式的高层子任务，再以该子任务为条件生成低层连续动作，从而把任务分解与动作控制纳入同一模型。由此，\(\pi\)系列形成了“\(\pi_0\)建立流匹配动作专家--\(\pi_0\)-FAST提高动作序列训练效率--\(\pi_{0.5}\)通过异构协同训练和高低层统一推理扩展开放环境泛化”的演进路径。
+
+上述研究表明，VLA模仿学习已形成基于通用模型、通过任务示教进行下游微调的技术路线。结合前期已完成的OpenPI/\(\pi_{0.5}\)推理闭环，本研究拟基于任务示教微调\(\pi_{0.5}\)，并将所得策略作为后续强化学习优化的行为先验。
+
+\subsection{面向工业操作的强化学习与PPO类方法}
+
+强化学习以任务奖励为优化目标，能够在专家轨迹覆盖有限的状态中尝试新动作，因而有望拓展模仿策略的性能空间。与此同时，真机环境的重置次数和探索范围受到设备时间与安全条件约束，碰撞、卡滞或过大接触力还可能损伤工件与末端。针对接触丰富操作的综述显示，现有方法的主要矛盾集中在样本效率、奖励建模、仿真迁移和真机安全等方面\cite{elguea2023review}。因此，评价一种强化学习算法时，需要同时观察其最终任务表现，并计量交互步数、失败次数与训练方差。
+
+现有工业操作研究主要通过结构先验与控制融合缩小需要学习的问题。引导策略搜索以轨迹优化约束策略学习\cite{levine2015gps}；残差强化学习聚焦于基础控制器的修正量\cite{johannink2019residual}；柔顺机构、环境约束和低维动作空间可提高有效探索比例\cite{hamaya2020softness}。在国内相关工作中，Gai等将模型先验与动作维度扩展用于非对称装配，后续又通过状态—动作局部连接降低装配策略的优化复杂度\cite{gai2022model,gai2024local}。灰盒自适应操作原语保留部分机理模型，同时从数据中调整未知部分\cite{braun2023greybox}。这些方法的共同价值在于，使学习器聚焦于基础感知与控制链路之外的修正部分，并保留既有系统结构。
+
+残差强化学习对“结构先验与学习修正”的分工如图~\ref{fig:residual-rl-framework}所示。图左的控制链路表明，基础控制器与学习策略接收同一状态，二者输出叠加后才作用于机器人，而奖励仅更新残差学习分支；图右则给出了该结构在装配过程中的实际动作阶段。该图直观说明了残差方法为何能够保留基础控制器已具备的确定性行为，并把接触、摩擦或对象耦合等复杂影响限定在修正通道内，因此支撑了前文“学习器聚焦于基础控制器修正量”的归纳。对本课题而言，图~\ref{fig:residual-rl-framework}还提示了一条可验证的安全设计路径：分别限定基础动作、残差动作幅值及两者叠加后的总控制量，并在残差策略失效时退回基础控制器。图右的装配实例展示了该结构在原任务中的可行性，其适用性仍需针对本研究的目标工件、动作范围和安全边界重新验证。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.96\textwidth]{residual-rl-framework.pdf}
+  \caption{残差强化学习中基础控制与学习修正的叠加结构及装配示例\cite{johannink2019residual}}
+  \label{fig:residual-rl-framework}
+\end{figure}
+
+奖励、迁移与安全机制决定了强化学习进入真实工业环境的可行性。稀疏的任务成功信号所提供的任务进度信息有限，Wu等因此从高维观测中学习任务进度和稠密奖励\cite{wu2021dense}。在仿真到真机方面，动力学随机化通过扩大仿真参数分布来提高策略对模型偏差的容忍度\cite{peng2018dynamics}，SimOpt则利用真实交互反向更新仿真随机化分布\cite{chebotar2019simopt}；元强化学习通过仿真中的任务分布预训练，缩短新插接条件下的真机适应过程\cite{schoettler2020meta}。对于位置控制型工业机器人，Beltran-Hernandez等将学习力控制与低层安全逻辑结合，表明学习动作需通过柔顺接口与硬件保护落地\cite{beltran2020force}。
+
+近端策略优化（Proximal Policy Optimization, PPO）以裁剪概率比率约束单次策略更新的幅度，并在采样后对小批量数据进行多轮优化\cite{schulman2017ppo}。该机制为稳定策略更新提供了一种工程上较简洁的实现，但PPO属于同策略（on-policy）算法，历史数据的重用能力受限；在稀疏奖励下，有效探索还依赖奖励设计、状态表示与采样机制。真机基准研究还表明，强化学习算法对超参数与任务接口敏感，其相对性能具有任务依赖性\cite{mahmood2018benchmark}。因此，PPO在本课题中应首先作为待检验的标准基线，并与SAC、TD3等候选方法在相同观测、动作、奖励和交互预算下比较。本研究将先通过标准PPO基线识别样本效率、稀疏奖励探索、动作平滑性或示教先验保持等方面的实际问题，再据此确定相应改进机制。
+
+\subsection{模仿学习与强化学习的联合优化}
+
+模仿学习与强化学习的联合目的，是使策略先利用示教获得可执行的行为先验，再根据任务奖励改善示教覆盖有限状态下的行为。示教可通过多种机制进入强化学习过程：既可用于策略预训练，也可作为强化更新中的回放数据、辅助行为克隆损失、奖励建模依据，或通过残差、门控与集成结构与学习动作共同执行。不同机制对示教数量和质量、算法的同策略或异策略性质，以及真机在线训练的安全条件具有不同要求。
+
+示教初始化是最直接的联合方式。它先以行为克隆拟合专家策略，再以强化学习继续更新，能够减少初始阶段的随机动作。其局限在于，如果奖励梯度把策略迅速推离示教分布，初始可执行能力可能发生退化；若长期施加过强的模仿约束，则可能把策略限制在专家轨迹附近。Nair等将示教数据、示教奖励和目标状态重标记结合，用于缓解稀疏奖励下的探索困难\cite{nair2018demonstrations}。中国科学院自动化研究所团队将示教用于加速精密插接技能的深度强化学习\cite{wu2019demonstration}。两类工作都表明示教可以改变探索起点与有效样本的获得方式，其收益范围仍需结合具体算法、示教条件与任务设置进行验证。
+
+另一类方法通过残差、柔顺控制或策略集成保留可信的先验通道。残差强化学习在基础控制动作上叠加学习修正，可以在策略未成熟时保留基本任务能力\cite{johannink2019residual}。在2026年的高精度轴孔装配研究中，Ding等将模仿策略、混合力/位控制与SAC策略进行集成，并通过仿真预训练和真机自学习衔接两类环境\cite{ding2026ensemble}。Su等在受限域内由示教离线学习变导纳行为，再以强化学习在线适应平移空间，同时利用旋转约束维持稳定性\cite{su2026admittance}。这些国内研究展示了示教、控制先验和强化学习在精密装配中的多种组合方式，同时也说明联合方法的效果与底层控制接口、示教类型和在线适应范围密切相关。
+
+从训练流程看，联合优化可分为“仿真中完成优化后在真机推理”、“利用少量真机数据更新仿真或策略参数”与“在真机上直接在线训练”三种形式，其真实交互成本和安全风险存在差异。对本课题而言，示教初始化、示教约束和强化优化的作用将通过消融实验分别识别：先比较纯模仿、从零强化学习与模仿初始化基线，再在统一交互预算下加入候选约束或融合机制。相关结果用于判断示教先验主要改善初始性能、探索效率、训练稳定性还是最终策略质量。
+
+\subsection{策略评价、泛化与工业部署指标}
+
+统一任务定义和试验预算是比较不同策略性能的基本前提。对工业具身任务，评价协议至少应包含任务完成、学习过程、泛化鲁棒性与部署可靠性四个层次。任务完成层除成功率外，还需根据具体操作报告完成时间或节拍、插入深度、末端位姿误差、峰值与均方接触力、卡滞或碰撞次数。学习过程层需要统计示教数量与采集时长、环境交互步数、达到性能阈值所需样本、训练方差以及计算资源。对PPO等随机优化方法，应使用多个随机种子并报告离散程度，以多次试验结果表征算法性能。
+
+通用机器人学习基准为评价维度提供了可借鉴的组织方式。James等提出的RLBench基准提供多任务、多模态观测与示教接口，适合比较策略在不同操作上的学习能力\cite{james2020rlbench}；Mandlekar等提出的RoboMimic基准强调数据质量、观测选择、训练终止与真机评价对离线策略结论的影响\cite{mandlekar2022robomimic}；Mees等提出的CALVIN基准以语言条件下的长时序连续任务考察策略是否能组合技能\cite{mees2022calvin}。Pumacay等提出的THE COLOSSEUM基准从对象和背景属性、光照、相机位姿、干扰物及物理参数等多个扰动轴系统评估策略泛化，其重点是报告性能随扰动条件的变化，并形成比“见过/未见”二分结果更细致的描述\cite{pumacay2024colosseum}。Jin等构建的CloudGripper-Push-1K数据集对视频Transformer在不同物理和背景属性下的表现进行案例分析，进一步表明策略可能同时依赖任务相关的物理线索和背景视觉属性\cite{jin2024cloudgripper}。
+
+THE COLOSSEUM的任务与扰动组织方式如图~\ref{fig:colosseum-perturbations}所示。图的上部按任务时域与操作复杂度组织测试实例，下部则把对象颜色、纹理和尺寸、背景、干扰物、相机位姿、摩擦及质量等因素展开为可独立控制的扰动维度。该图把“泛化能力”从笼统结论转化为任务层级与扰动轴的组合，因而支撑了按扰动类型与强度报告性能变化的评价思路。依据图~\ref{fig:colosseum-perturbations}的组织逻辑，本研究可先建立任务层级，再开展单因素分级扰动和多因素组合扰动试验，并绘制性能退化曲线；具体因素及其范围将依据本课题的工件公差、传感器配置和安全限制进行设定。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.76\textwidth]{colosseum-perturbations.pdf}
+  \caption{Pumacay等提出的THE COLOSSEUM基准：任务层级与扰动维度\cite{pumacay2024colosseum}}
+  \label{fig:colosseum-perturbations}
+\end{figure}
+
+本课题将在上述通用基准的评价维度基础上建立面向工业任务的专用协议。工业试验还应针对工件位姿偏差、尺寸与公差、摩擦与刚度变化、光照和背景、相机位姿及传感噪声设置有依据的扰动等级，绘制性能随扰动强度的退化曲线。部署层则需要同时记录控制频率、端到端推理延迟、安全违规、人工接管与失败恢复，并对失败案例按感知、规划、接触控制或系统时延分类。在方法比较前，本课题应固定训练/测试划分、初始状态分布、最大步数、成功与失败判据以及交互预算，再比较纯模仿策略、从零PPO、模仿初始化PPO与候选联合方法。
+
+\subsection{国内外比较与研究现状评述}
+
+现有研究已形成三点共识。第一，预编程轨迹对未建模接触和环境不确定性的覆盖范围受预设边界限制，视觉、力觉或触觉闭环策略已成为提高适应性的重要路径。第二，示教、仿真、控制器和任务结构都可以作为策略先验，并与数据和交互形成互补，以缩小真机探索范围。第三，从单任务策略到VLA等跨任务模型，策略的能力边界有所扩展，但数据规模、实时性、接触控制接口和可复现评价的要求也随之提高。
+
+就本次检索的代表性样本而言，国外研究较早系统讨论引导策略搜索、残差学习、元学习、跨本体数据和通用操作基准\cite{levine2015gps,johannink2019residual,schoettler2020meta,openx2024rtx}；国内团队在微装配与轴孔插接、几何先验、轻量VLA及示教—强化融合方面形成了针对性较强的研究\cite{qin2019precision,gai2022model,zang2023promp,wen2025tinyvla,ding2026ensemble,su2026admittance}。上述比较适用于本文的检索范围与纳入标准，其结论限于所选代表性样本及相应的方法侧重。
+
+将上述进展映射到本课题的目标场景，仍有三个问题有待验证。其一，通用视觉或VLA策略与高精度接触控制之间存在传感频率、动作空间与评价尺度差异，其泛化能力向工业公差下稳定闭环性能的转化规律有待直接证据支持。其二，现有联合方法常同时使用示教初始化、模仿约束、奖励整形和控制先验，各项机制对初始性能、探索效率与最终策略质量的独立贡献仍需通过消融实验识别。其三，多目标工业部署判断需要在成功率之外，进一步统一纳入节拍、接触力、安全违规、样本成本和扰动边界等指标。
+
+基于以上问题，本研究拟先界定具体工业任务的观测、动作、安全约束、扰动因素与评价协议，再在统一数据和交互预算下建立模仿学习与标准PPO基线。在此基础上，根据基线在策略保持、探索效率或动作平滑性等方面呈现的实际问题，选择示教先验保持、奖励设计或安全约束中与证据对应的候选改进项，并通过对比、消融与分级扰动实验确定联合方法的收益边界。该切入点以“示教先验能否在保持可执行行为的同时支持后续强化优化”为核心可检验问题，并通过统一基线与消融实验评价VLA和PPO的适用条件。
+
+\section{主要内容及方案}
+
+\subsection{总体思路与技术路线}
+
+本研究将围绕“示教先验能否在保持双臂操作策略可执行性的同时支持后续强化优化”这一核心问题展开。研究对象将限定为轮式双臂机器人执行的工业操作任务：观测将以头部和腕部多视角图像、双臂末端位姿、夹爪状态及任务条件为主，动作将以左右机械臂末端笛卡尔位姿增量和夹爪指令为主。腰部、头部和移动底盘将作为可选扩展自由度；若主任务不需要全身协同，则研究范围将保持在双臂操作层面，以保证方法比较和真机验证能够形成闭环。具体工件、工装和成功阈值将在实验装置确定后固化到任务规范中，不在开题阶段预设未经验证的参数。
+
+围绕上述问题，研究将按三个递进层次组织，并以一条贯穿全程的验证线索加以约束。第一层将把目标工业操作转化为边界明确的序列决策问题，固定观测、动作、奖励、扰动与评价指标，形成数据划分、算法比较和真机验收共同遵循的任务规范，对应研究内容一。第二层将以VR遥操作示范为数据来源，建立具备闭环执行能力的模仿策略，作为后续强化优化的固定先验，对应研究内容二。第三层将在统一交互预算下建立标准PPO与模仿初始化PPO基线，并依据模仿策略与PPO的接口兼容性在两条融合路线之间做出选择，对应研究内容三。贯穿上述层次的验证线索，则将通过统一对照、逐项消融、分级扰动和安全准入下的真机复核判定各项机制的实际收益与适用边界，对应研究内容四。前一层的输出将作为后一层的固定输入，以避免在比较过程中反复调整任务定义或评价尺度。
+
+图\ref{fig:research-technical-route}给出了上述思路对应的技术路线。任务建模、示教数据处理与模仿策略先验构成顺序推进的前段；模仿策略与PPO在网络规模、更新频率和参数化接口上是否兼容，将作为路线中的方法决策点：接口兼容时，研究将采用模仿参数初始化配合PPO受限更新；接口不兼容或大模型在线更新代价过高时，研究将冻结模仿策略并训练轻量残差PPO。两条路线最终都将在同一评价协议下接受仿真验证与安全准入后的真机试验，其评价结果又将反馈用于修正任务边界与候选机制的取舍。
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{0.97\textwidth}{!}{\input{figures/research-technical-route}}
+  \caption{示教先验引导PPO的研究技术路线}
+  \label{fig:research-technical-route}
+\end{figure}
+
+按上述路线，研究结论将由统一基线、重复试验、组件消融、分级扰动和失败案例共同支撑。训练奖励上升或单次真机成功都不构成方法有效性的判据；若实验证据不足以支持某项机制，研究将把相应结果表述为方法的适用边界。
+
+\subsection{关键问题与研究假设}
+
+上述思路将重点处理三个相互依赖的问题。
+
+第一，动作块推理与单步更新之间的接口不匹配。VLA策略通常一次输出一定时域的动作块，而标准PPO往往按较短交互步更新，两者在网络规模、输出频率和参数化接口上可能不兼容。研究将统一动作时域、动作限幅和责任归因方式，并在“共享参数初始化”与“固定模仿策略加轻量残差”之间建立可执行的选择条件；该问题的具体处理将在研究内容三中展开。
+
+第二，示教约束强度的权衡。约束过强可能限制策略探索，约束过弱又可能在更新初期破坏已有的可执行行为。研究将通过初始性能、达到固定阈值所需交互量、种子间方差和最终性能，分阶段刻画先验在训练过程中的作用；相应的机制选择与消融同样属于研究内容三。
+
+第三，多目标评价与单一标量奖励之间的张力。工业操作同时关注成功率、节拍、平滑性与安全性，单一标量奖励可能诱导策略利用仿真或评价漏洞。研究将把训练奖励、独立测试指标和硬安全约束分层设计，其中指标与约束的定义属于研究内容一，分级扰动与真机复核的组织属于研究内容四。
+
+基于上述问题，研究拟检验两项假设：其一，在接口兼容时采用受限参数更新、接口不兼容时采用可限幅的动作残差，可能比无约束的模仿初始化更有利于保持初始可执行性；其二，在固定数据划分、交互预算和安全约束的条件下，阶段性指标与逐项消融可能区分示教先验对初始行为、有效探索、训练稳定性和最终策略质量的不同作用。两项假设均将以统一对照和重复试验为判定依据；若实验不能提供相应证据，研究将把结果表述为方法的适用边界，而不将其认定为创新结论。
+
+\subsection{研究内容一：工业双臂操作任务建模与评价协议}
+
+本项内容将把目标工业操作转化为可复现的学习问题，并固定后续所有方法比较所依据的评价尺度。
+
+\paragraph{任务边界与序列决策形式化。}研究将首先界定目标任务的工件与工装边界、初始状态范围、操作阶段划分、最大执行步数、成功与失败判据以及安全终止条件，并将其表示为包含观测、动作、状态转移、奖励和终止条件的序列决策问题。观测空间将以头部和腕部多视角图像、双臂末端位姿、夹爪状态及任务条件为主，动作空间将以双臂末端笛卡尔动作和夹爪指令为主。动作时域与执行频率将与第5节所述笛卡尔控制接口对齐，使策略输出能够直接映射为机器人可执行指令。
+
+\paragraph{奖励构成与硬安全约束的分层设计。}训练奖励将由可测量的任务阶段进度、终端成功、执行时间、动作变化和安全代价构成，具体奖励项及其权重将在开发集上确定，并在测试前固定。碰撞、关节越限和过大动作等设备风险将由动作限幅和独立终止规则形成硬约束，负奖励仅作为训练阶段的辅助优化信号，不承担安全保障功能。训练指标、模型选择指标和最终验收指标将分别记录，避免使用同一批试验反复调参与评价。
+
+\paragraph{分级扰动与评价指标的定义。}研究将依据实际任务中能够测量或标定的变化来源，设置工件位姿、视觉噪声、相机位姿和工件属性等分级扰动，不为丰富实验数量而虚构测试条件。评价指标将定义为四个层面：任务完成层刻画策略是否达成工艺要求，学习过程层刻画获得该能力所需的交互成本与训练稳定性，泛化鲁棒性层刻画性能随扰动强度的变化，部署可靠性层刻画策略在真实系统中的实时性与安全表现。各层的具体记录项及其实验组织方式将在研究内容四中给出。
+
+本项内容的产出将是一份版本化的任务规范与评价协议，供数据划分、算法比较和真机验收共同遵循。
+
+\subsection{研究内容二：示教数据处理与模仿策略先验}
+
+本项内容将把VR遥操作示范转化为质量可控的数据集，并在其上建立具备闭环执行能力的模仿策略。
+
+\paragraph{示教回合的质量审查与数据划分。}研究将以第5节所述VR遥操作回合为基本单位，检查多视角图像、机器人状态、动作和时间戳之间的同步关系，标记无效帧、夹爪状态跳变、人工中断和失败回合，并完成状态与动作归一化。数据将按回合级划分为训练集、验证集和测试集，同一操作序列将固定归入同一子集，以避免相邻帧在子集之间泄漏而高估策略性能。
+
+\paragraph{模仿策略的选型与训练。}研究将依托OpenPI部署链路训练或微调\(\pi_{0.5}\)等VLA策略，并根据任务需求设置轻量行为克隆、动作分块或扩散策略作为可复现对照。模型规模的选择将以任务需求为准：仅当目标任务确有语言条件或跨任务迁移需求，且数据与算力条件能够支撑时，才将VLA确定为核心模型；否则将保留轻量视觉--动作策略，用于区分大模型能力与任务必需能力。需要语言条件时，研究还将统一任务指令模板与语义边界。
+
+\paragraph{示教先验质量的评估。}离线动作误差与时序一致性将用于模型筛选，闭环任务结果将用于评价实际执行能力，两者不相互替代。研究还将通过改变示教数量、回合质量和观测模态，分析数据覆盖范围与示教噪声对闭环可执行性的影响，从而说明初始策略性能与示教数据条件之间的关系。
+
+本项内容的产出将是一个固定的模仿策略先验及其数据说明，作为研究内容三的输入，在后续强化优化的比较中不再变更。
+
+\subsection{研究内容三：示教先验引导的PPO策略优化}
+
+本项内容将在统一条件下检验示教先验对PPO的实际作用，并确定与观测到的问题相对应的融合机制。
+
+\paragraph{统一基线与问题诊断。}研究将分别构建从零训练的标准PPO和模仿初始化PPO基线，两者将采用相同的观测、动作、奖励、交互步数、并行环境数、评估频率和随机种子集合。基线的作用在于暴露问题而非直接给出结论：研究将据此判断训练过程中是否出现先验遗忘、稀疏奖励下长时间无有效轨迹、种子间训练方差过大或动作抖动等具体现象，并以这些现象作为后续机制选择的依据。
+
+\paragraph{接口兼容性决策与两条融合路线。}当模仿策略与PPO具备兼容的参数化接口时，研究将考察参数初始化配合受限更新，即在PPO目标中加入行为克隆辅助约束或策略距离约束，限制单次更新偏离示教先验的幅度。当VLA模型直接在线更新的计算与数据代价过高时，研究将冻结模仿策略，并采用轻量PPO学习动作残差或门控修正。以宏观决策步\(j\)为单位，执行动作将写为
+\begin{equation}
+  \mathbf U_j
+  =
+  \Pi_{\mathcal A}
+  \left(
+    \overline{\mathbf U}_j^{\mathrm{IL}}
+    +\alpha_j\Delta\mathbf U_j
+  \right),
+  \label{eq:imitation-residual-action}
+\end{equation}
+式中，\(\overline{\mathbf U}_j^{\mathrm{IL}}\)为模仿策略给出的基础动作子块，\(\Delta\mathbf U_j\)为轻量PPO输出的残差，\(\alpha_j\)为固定或分阶段调整的残差幅度系数，\(\Pi_{\mathcal A}\)表示按机器人动作范围进行投影或限幅。该形式将使模仿策略保留为明确的回退行为，并通过残差限幅控制PPO的动作权限；其与动作块推理的对应关系及相应的残差约束目标，已在第5节式\eqref{eq:pi-residual-policy}和式\eqref{eq:pi-il-ppo-objective}中给出。
+
+\paragraph{问题导向的候选机制与消融。}候选机制将只针对基线中实际出现的问题选取，不预先写成方法的必要组成。若更新初期出现模仿能力快速退化，研究将考察行为克隆辅助项、策略距离约束或残差幅度调度；若稀疏奖励导致长时间无有效轨迹，将考察示教状态重置、阶段奖励或课程学习；若动作抖动与节拍收益发生冲突，将考察动作变化代价或底层滤波。最终保留的每一项机制都将通过逐项移除的消融试验识别其独立作用，未被采用的候选项不进入最终方法描述。
+
+\subsection{研究内容四：分级验证、评价方案与适用边界}
+
+本项内容将在研究内容一确定的评价协议下组织实验，并给出可支撑结论的证据与边界说明。
+
+\paragraph{对照组与消融设计。}基本对照组将包括纯模仿策略、从零训练的标准PPO、模仿初始化加标准PPO以及模仿先验加候选优化方法。各组将采用相同的任务定义、数据划分、交互预算、安全约束和评估频率；涉及随机训练时将采用相同的随机种子集合。消融实验将只针对最终方法实际保留的组件逐项移除，不把尚未采用的课程学习、示教约束或奖励项预先写成必要组成。每种方法将报告训练曲线、达到固定性能阈值所需交互量、最终任务表现和种子间离散程度；真机样本量允许时，还将报告置信区间或适当的统计检验结果。
+
+\paragraph{仿真验证与分级扰动。}仿真实验将重点考察收敛过程、样本效率、种子间离散程度和动作平滑性，并记录扰动条件下的性能退化。泛化测试将以单因素分级扰动为主、必要的多因素组合为辅，并绘制性能随扰动强度变化的退化曲线。训练奖励与最终评价指标将分开报告，以便识别奖励上升但真实任务质量未改善的情况。
+
+\paragraph{安全准入与真机验证。}候选策略将先接受仿真环境中的动作限幅、连续执行稳定性和异常终止测试，再进入低速、小范围的真机试验。研究将先核对感知与动作日志的一致性，随后逐级扩大初始状态和扰动范围。真机试验将记录任务成功、完成时间、末端误差、控制频率、端到端推理时延、动作平滑度、安全触发和人工接管情况。若急停、碰撞或力限制、环境隔离及人工接管条件未达到试验要求，技术路线将降级为仿真训练后的真机闭环推理，不开展真机在线探索。
+
+\paragraph{失败分析与适用边界。}失败案例将按感知、规划、接触控制或系统时延归类，并与对应的扰动等级和安全触发记录相互关联。研究最终将根据仿真与真机证据的一致程度，说明候选方法的收益、限制及可安全采用的条件；当仿真收益未能在真机复核中保留时，研究将报告该差异及其可能来源，而不以仿真结果单独支撑结论。
+
+\subsection{可行性分析与降级路径}
+
+\paragraph{平台与前期基础。}本研究将依托第5节所述轮式双臂机器人、VR示教采集、多模态同步记录、笛卡尔控制和OpenPI推理闭环开展工作。示范采集、离线训练、模型部署和闭环推理的基本链路已经贯通，可直接支持任务建模与模仿基线的建立。
+
+\paragraph{方法与文献依据。}示教初始化、示教约束、残差强化学习和PPO均有相关文献与公开方法可供复现和比较\cite{schulman2017ppo,nair2018demonstrations,johannink2019residual,wu2019demonstration}，可为基线设置和候选机制选择提供方法依据，降低方案在算法实现层面的不确定性。
+
+\paragraph{进度与验收可行性。}任务建模、数据审查、模仿基线、PPO诊断、仿真实验和真机验证能够分阶段形成可检查产出，因而研究进度可按任务依赖逐步验收；前一阶段未通过检查时，后续阶段不会在尚未固定的输入上继续推进。
+
+\paragraph{主要不确定性与降级路径。}方案还将设置与主要不确定性对应的降级路径。若目标任务范围过宽，将优先保留一项主任务及其必要模态；若VLA微调超出算力或时间预算，将冻结感知与语言骨干、采用参数高效微调或轻量动作策略；若真机在线探索不能满足安全条件，将保留完整的仿真对比，并只开展通过安全检查的真机推理验证。上述调整均不会取消统一任务、统一基线、对比消融和边界分析这条核心证据链。
+
+\section{预期达到的目标}
 
 \subsection{研究目标}
-\placeholder{给出可检验、可评价的总体目标和阶段目标。}
 
-\subsection{拟解决的关键问题}
-\placeholder{列出关键科学问题、技术难点及它们之间的逻辑关系。}
+本研究预期达到以下目标：
 
-\section{研究方案及可行性论证}
+\begin{enumerate}[label=\textup{(\arabic*)},leftmargin=2.5em,itemsep=0.45em,topsep=0.3em]
+  \item 形成一套面向目标工业双臂操作任务的可复现任务模型与评价协议，明确观测、动作、数据划分、成功与失败判据、交互预算、分级扰动和安全准入条件。
+  \item 建立具有闭环执行能力的模仿策略基线，并通过数据量、回合质量和模态对照说明示教数据覆盖范围与初始策略性能之间的关系。
+  \item 在统一预算下完成纯模仿、从零PPO、模仿初始化PPO和示教先验融合方法的比较，判断示教先验对初始性能、样本效率、训练稳定性和最终任务表现的实际作用。
+  \item 通过组件消融、分级扰动、仿真对比和真机复核，说明候选机制的收益边界、失败模式及安全降级条件，不预设其必然优于各项基线。
+\end{enumerate}
 
-\subsection{研究方法与技术路线}
-\placeholder{说明研究方法、技术路线、试验或仿真方案；必要时插入流程图。}
+正式任务确定后，成功率、完成时间、最大允许误差和推理时延等量化阈值将依据设备能力、任务工艺和安全规范写入评价协议，并在测试前固定。
 
-\subsection{可行性分析}
-\placeholder{从理论依据、技术条件、数据或试验基础、时间安排等方面展开论证。}
+\subsection{预期成果}
+
+研究预期形成一套版本化的任务规范与评价协议，一套经过质量审查的内部示教数据及其说明，一组可复现的模仿学习和PPO基线配置，以及一种经过对比与消融检验的示教先验引导方法或相应的适用性结论。实验层面预期形成仿真对比、组件消融、分级扰动和真机重复试验记录，并配套整理失败分类、安全触发和工程降级方案。最终将完成一篇结构完整、方法与证据一致的硕士学位论文，并整理支撑论文复核的代码、配置、日志和图表。数据或代码是否公开，以及是否形成论文、专利等附加成果，将依据项目权限、培养要求和导师安排确定。
+
+\section{已完成的学术研究/实践工作}
+
+\subsection{实验平台与坐标系定义}
+
+本研究已在轮式双臂机器人平台上完成示范采集与策略执行所需的基础接口建设。机器人上半身由左右两条七自由度机械臂、四自由度腰部和二自由度头部组成，共包含20个转动关节，并配置末端夹爪、头部相机和腕部相机。运动学模型覆盖上述20个上半身关节。现阶段的双臂操作以左右机械臂末端笛卡尔位姿和夹爪状态作为核心状态与动作变量，执行模型将腰部、头部和移动底盘位姿作为固定参数，仅更新左右机械臂的关节状态。
+
+为统一描述整机各运动支路与虚拟现实（Virtual Reality，VR）设备之间的空间关系，本文以 \(s\in\{L,R\}\) 区分左、右机械臂，并定义以下坐标系：世界坐标系和机器人基座坐标系分别记为 \(\{O\}\) 和 \(\{B\}\)；腰部安装坐标系记为 \(\{0_W\}\)，第 \(j\) 个腰部关节或连杆坐标系记为 \(\{j_W\}\)，其中 \(j=1,\ldots,4\)；机械臂安装坐标系记为 \(\{0_s\}\)，第 \(i\) 个机械臂关节或连杆坐标系记为 \(\{i_s\}\)，末端执行器坐标系记为 \(\{E_s\}\)；头部安装坐标系记为 \(\{0_N\}\)，两个头部关节或连杆坐标系记为 \(\{1_N\}\) 和 \(\{2_N\}\)，头部末端坐标系记为 \(\{E_N\}\)。VR参考坐标系记为 \(\{V\}\)，左右手控制器坐标系记为 \(\{H_s\}\)。其中，\({}^{A}\mathbf{T}_{C}\) 表示坐标系 \(\{C\}\) 相对于坐标系 \(\{A\}\) 的位姿，即把 \(\{C\}\) 中的齐次坐标变换到 \(\{A\}\) 中。该表示写为
+\begin{equation}
+  {}^{A}\mathbf{T}_{C}
+  =
+  \begin{bmatrix}
+    {}^{A}\mathbf{R}_{C} & {}^{A}\mathbf{p}_{C} \\
+    \mathbf{0}_{1\times 3} & 1
+  \end{bmatrix},
+  \label{eq:homogeneous-transform}
+\end{equation}
+式中，\({}^{A}\mathbf{R}_{C}\in\mathrm{SO}(3)\) 为旋转矩阵，\({}^{A}\mathbf{p}_{C}\in\mathbb{R}^{3}\) 为坐标系原点的位置向量。若空间点在 \(\{C\}\) 中的齐次坐标为 \(\bar{\mathbf p}^{C}\)，则其在 \(\{A\}\) 中的表示为 \(\bar{\mathbf p}^{A}={}^{A}\mathbf T_C\bar{\mathbf p}^{C}\)。连续坐标变换满足
+\begin{equation}
+  {}^{A}\mathbf{T}_{D}
+  =
+  {}^{A}\mathbf{T}_{C}\,{}^{C}\mathbf{T}_{D},
+  \qquad
+  \left({}^{A}\mathbf{T}_{C}\right)^{-1}
+  =
+  \begin{bmatrix}
+    \left({}^{A}\mathbf{R}_{C}\right)^{\mathrm T}
+    &
+    -\left({}^{A}\mathbf{R}_{C}\right)^{\mathrm T}{}^{A}\mathbf{p}_{C} \\
+    \mathbf{0}_{1\times 3} & 1
+  \end{bmatrix}.
+  \label{eq:transform-compose-inverse}
+\end{equation}
+式\eqref{eq:homogeneous-transform}和式\eqref{eq:transform-compose-inverse}构成后续整机分支运动链、VR增量映射和末端位姿误差计算的统一表示基础。
+
+\subsection{整机运动学建模与末端位姿变换}
+
+机器人上半身采用树状运动链结构，四自由度腰部构成公共运动链，左右两条七自由度机械臂和二自由度头部分别构成三个运动分支。夹爪开合量作为独立执行变量，不计入上半身20自由度关节向量。整机上半身关节向量定义为
+\begin{equation}
+  \begin{aligned}
+    \mathbf q^{\mathrm{up}}
+    &=
+    \begin{bmatrix}
+      \mathbf q_W^{\mathrm T} &
+      \mathbf q_L^{\mathrm T} &
+      \mathbf q_R^{\mathrm T} &
+      \mathbf q_N^{\mathrm T}
+    \end{bmatrix}^{\mathrm T}
+    \in\mathbb R^{20},\\
+    \mathbf q_W
+    &=\begin{bmatrix}q_{1,W}&\cdots&q_{4,W}\end{bmatrix}^{\mathrm T},
+    \quad
+    \mathbf q_s
+    =\begin{bmatrix}q_{1,s}&\cdots&q_{7,s}\end{bmatrix}^{\mathrm T},
+    \quad s\in\{L,R\},\\
+    \mathbf q_N
+    &=\begin{bmatrix}q_{1,N}&q_{2,N}\end{bmatrix}^{\mathrm T}.
+  \end{aligned}
+  \label{eq:whole-upper-body-joints}
+\end{equation}
+式中，\(\mathbf q_W\)、\(\mathbf q_L\)、\(\mathbf q_R\) 和 \(\mathbf q_N\) 分别对应四个腰轴、七个左臂关节、七个右臂关节和两个头轴。移动底盘不作为上半身MDH链中的转动关节；当后续任务需要联合底盘运动时，通过世界坐标系下的基座位姿 \({}^{O}\mathbf T_B\) 与上半身关节向量共同表示整机状态。
+
+本研究采用改进Denavit--Hartenberg（Modified Denavit--Hartenberg，MDH）方法统一描述各串联分支的连杆关系。令分支索引 \(\chi\in\mathcal C=\{W,L,R,N\}\)，各分支关节数分别为 \(n_W=4\)、\(n_L=n_R=7\) 和 \(n_N=2\)。对分支 \(\chi\) 的第 \(j\) 个关节，MDH参数记为 \(\left(a_{j-1,\chi},\alpha_{j-1,\chi},d_{j,\chi},\theta_{j,\chi}\right)\)，其中 \(a_{j-1,\chi}\) 和 \(\alpha_{j-1,\chi}\) 分别描述相邻关节轴之间的连杆长度与扭转角，\(d_{j,\chi}\) 和 \(\theta_{j,\chi}\) 分别描述沿关节轴的偏移与转角。对于转动关节，令
+\begin{equation}
+  \theta_{j,\chi}=q_{j,\chi}+\theta^{0}_{j,\chi},
+  \label{eq:joint-angle-offset}
+\end{equation}
+其中 \(q_{j,\chi}\) 为关节变量，\(\theta^{0}_{j,\chi}\) 为由零位定义确定的固定角偏置。本节采用符号化运动学模型，具体连杆尺寸、安装外参和零位偏置取自机器人平台配置与标定结果。
+
+按照MDH约定，从坐标系 \(\{(j-1)_\chi\}\) 到 \(\{j_\chi\}\) 的单级齐次变换依次由绕 \(x\) 轴旋转、沿 \(x\) 轴平移、绕 \(z\) 轴旋转和沿 \(z\) 轴平移组成：
+\begin{equation}
+  {}^{(j-1)_\chi}\mathbf{T}_{j_\chi}
+  =
+  \operatorname{Rot}_{x}\!\left(\alpha_{j-1,\chi}\right)
+  \operatorname{Trans}_{x}\!\left(a_{j-1,\chi}\right)
+  \operatorname{Rot}_{z}\!\left(\theta_{j,\chi}\right)
+  \operatorname{Trans}_{z}\!\left(d_{j,\chi}\right).
+  \label{eq:mdh-factorization}
+\end{equation}
+为便于书写，令
+\(c_{\theta}=\cos\theta_{j,\chi}\)、\(s_{\theta}=\sin\theta_{j,\chi}\)、
+\(c_{\alpha}=\cos\alpha_{j-1,\chi}\) 和
+\(s_{\alpha}=\sin\alpha_{j-1,\chi}\)，则式\eqref{eq:mdh-factorization}展开为
+\begin{equation}
+  {}^{(j-1)_\chi}\mathbf{T}_{j_\chi}
+  =
+  \begin{bmatrix}
+    c_{\theta} & -s_{\theta} & 0 & a_{j-1,\chi} \\
+    s_{\theta}c_{\alpha} & c_{\theta}c_{\alpha} & -s_{\alpha}
+      & -d_{j,\chi}s_{\alpha} \\
+    s_{\theta}s_{\alpha} & c_{\theta}s_{\alpha} & c_{\alpha}
+      & d_{j,\chi}c_{\alpha} \\
+    0 & 0 & 0 & 1
+  \end{bmatrix}.
+  \label{eq:mdh-matrix}
+\end{equation}
+该矩阵把每个关节变量对后续连杆位姿的影响显式写入同一变换链。将各分支的关节变换按运动链顺序相乘，可得分支 \(\chi\) 从安装坐标系到末端连杆的变换：
+\begin{equation}
+  {}^{0_\chi}\mathbf{T}_{n_\chi}(\mathbf q_\chi)
+  =
+  \prod_{j=1}^{n_\chi}
+  {}^{(j-1)_\chi}\mathbf{T}_{j_\chi}(q_{j,\chi}),
+  \qquad \chi\in\mathcal C.
+  \label{eq:branch-kinematic-chain}
+\end{equation}
+
+按照平台的树状拓扑，四自由度腰部构成左臂、右臂与头部的公共前置运动链，两条机械臂和两自由度头部从腰部末端坐标系 \(\{4_W\}\) 分支。左右机械臂在上躯干上的安装位置不同，末端夹爪相对于第七连杆也存在固定工具偏置。由此，左右末端执行器的位姿分别为
+\begin{equation}
+  \begin{aligned}
+  {}^{B}\mathbf{T}_{E_s}(\mathbf q_W,\mathbf q_s)
+  ={}^{B}\mathbf{T}_{0_W}
+  &{}^{0_W}\mathbf{T}_{4_W}(\mathbf q_W)
+  {}^{4_W}\mathbf{T}_{0_s}\\
+  &{}^{0_s}\mathbf{T}_{7_s}(\mathbf q_s)
+  {}^{7_s}\mathbf{T}_{E_s},
+  \qquad s\in\{L,R\}.
+  \end{aligned}
+  \label{eq:whole-body-arm-forward-kinematics}
+\end{equation}
+头部末端位姿为
+\begin{equation}
+  {}^{B}\mathbf{T}_{E_N}(\mathbf q_W,\mathbf q_N)
+  ={}^{B}\mathbf{T}_{0_W}
+  {}^{0_W}\mathbf{T}_{4_W}(\mathbf q_W)
+  {}^{4_W}\mathbf{T}_{0_N}
+  {}^{0_N}\mathbf{T}_{2_N}(\mathbf q_N)
+  {}^{2_N}\mathbf{T}_{E_N}.
+  \label{eq:whole-body-head-forward-kinematics}
+\end{equation}
+式\eqref{eq:whole-body-arm-forward-kinematics}与式\eqref{eq:whole-body-head-forward-kinematics}共同定义了从整机上半身关节构型到左臂末端、右臂末端和头部末端位姿的映射：
+\begin{equation}
+  \mathcal F(\mathbf q^{\mathrm{up}})
+  =
+  \left(
+    {}^{B}\mathbf T_{E_L},
+    {}^{B}\mathbf T_{E_R},
+    {}^{B}\mathbf T_{E_N}
+  \right).
+  \label{eq:whole-upper-body-forward-map}
+\end{equation}
+若将移动底盘纳入后续全身任务，则任务末端在世界坐标系下的位姿可统一写为
+\begin{equation}
+  {}^{O}\mathbf T_{E_\rho}
+  ={}^{O}\mathbf T_B{}^{B}\mathbf T_{E_\rho},
+  \qquad \rho\in\{L,R,N\}.
+  \label{eq:mobile-base-whole-body-transform}
+\end{equation}
+在速度层面，相应的整机上半身差分运动学可表示为
+\begin{equation}
+  \begin{bmatrix}
+    \boldsymbol\xi_{E_L}\\
+    \boldsymbol\xi_{E_R}\\
+    \boldsymbol\xi_{E_N}
+  \end{bmatrix}
+  =
+  \mathbf J_{\mathrm{up}}(\mathbf q^{\mathrm{up}})
+  \dot{\mathbf q}^{\mathrm{up}},
+  \label{eq:whole-upper-body-jacobian}
+\end{equation}
+其中 \(\boldsymbol\xi_{E_L}\)、\(\boldsymbol\xi_{E_R}\) 和 \(\boldsymbol\xi_{E_N}\) 分别为左臂末端、右臂末端和头部末端的空间速度，\(\mathbf J_{\mathrm{up}}\) 为与20自由度关节向量对应的整机上半身雅可比矩阵。式\eqref{eq:whole-upper-body-forward-map}--\eqref{eq:whole-upper-body-jacobian}为后续释放腰部和头部自由度、研究双臂--腰部--头部协同控制保留了统一的位置与速度接口。
+
+在现阶段的双臂任务中，移动底盘位姿固定，腰部与头部关节分别保持在给定构型 \(\bar{\mathbf q}_W\) 和 \(\bar{\mathbf q}_N\)，即式\eqref{eq:whole-upper-body-jacobian}中对应的关节速度置零。此时，式\eqref{eq:whole-body-arm-forward-kinematics}可简化为当前已实现的单臂七自由度变换：
+\begin{equation}
+  \begin{aligned}
+  {}^{B}\mathbf T_{E_s}(\mathbf q_s)
+  &=
+  {}^{B}\bar{\mathbf T}_{0_s}
+  {}^{0_s}\mathbf T_{7_s}(\mathbf q_s)
+  {}^{7_s}\mathbf T_{E_s},\\
+  {}^{B}\bar{\mathbf T}_{0_s}
+  &=
+  {}^{B}\mathbf T_{0_W}
+  {}^{0_W}\mathbf T_{4_W}(\bar{\mathbf q}_W)
+  {}^{4_W}\mathbf T_{0_s},
+  \qquad s\in\{L,R\}.
+  \end{aligned}
+  \label{eq:fixed-waist-seven-dof-reduction}
+\end{equation}
+式\eqref{eq:fixed-waist-seven-dof-reduction}给出了腰部、头部与底盘位姿固定条件下左右机械臂各自的七自由度运动学。机器人当前关节状态代入该式后，可获得策略状态所需的末端位置与姿态；反向执行时，策略或遥操作系统给出的末端目标位姿由平台现有逆运动学模块转换为机械臂关节指令。
+
+为描述当前位姿与目标位姿之间的几何误差，记当前末端位姿为
+\({}^{B}\mathbf T_{E_s}\)，目标位姿为
+\({}^{B}\mathbf T_{E_{s,d}}\)。目标相对于当前末端坐标系的变换为
+\begin{equation}
+  {}^{E_s}\mathbf T_{E_{s,d}}
+  =
+  \left({}^{B}\mathbf T_{E_s}\right)^{-1}
+  {}^{B}\mathbf T_{E_{s,d}}.
+  \label{eq:end-effector-relative-error}
+\end{equation}
+若分别写出旋转和平移分量，则
+\begin{equation}
+  \begin{aligned}
+    {}^{E_s}\mathbf R_{E_{s,d}}
+    &=
+    \left({}^{B}\mathbf R_{E_s}\right)^{\mathrm T}
+    {}^{B}\mathbf R_{E_{s,d}},\\
+    {}^{E_s}\mathbf p_{E_{s,d}}
+    &=
+    \left({}^{B}\mathbf R_{E_s}\right)^{\mathrm T}
+    \left(
+      {}^{B}\mathbf p_{E_{s,d}}-{}^{B}\mathbf p_{E_s}
+    \right).
+  \end{aligned}
+  \label{eq:end-effector-error-components}
+\end{equation}
+式\eqref{eq:end-effector-relative-error}将基座系中的两个绝对位姿转化为当前末端系中的相对运动量，可用于判断位置与姿态偏差。现有笛卡尔控制模块根据目标位姿、当前关节状态和关节限位求取可行关节构型，并执行轨迹平滑、冗余自由度调节及奇异位形处理。上述求解与约束处理属于机器人平台已有能力，并作为学习策略与物理机器人之间的执行接口。现阶段已完成腰部与头部固定条件下的机械臂变换与执行接口验证，全身联合求解器尚待构建。上述整机上半身模型用于统一表示后续全身运动控制所需的关节变量和运动链。
+
+\subsection{基于VR遥操作的示范数据采集}
+
+在上述坐标关系基础上，本研究已构建基于VR设备的双臂遥操作与示范采集链路。系统读取头显及左右手控制器的空间位姿和交互信号，在遥操作回合开始时分别记录控制器初始位姿
+\({}^{V}\mathbf T_{H_s}(t_0)\) 与机器人末端初始位姿
+\({}^{B}\mathbf T_{E_s}(t_0)\)。固定标定旋转
+\({}^{B}\mathbf R_V\) 用于统一VR参考系与机器人基座系的轴向约定，比例系数 \(\lambda_s\) 用于调节操作者手部平移与机器人末端平移的尺度。由此，控制器相对初始位置的增量被映射为
+\begin{equation}
+  {}^{B}\mathbf p_{E_{s,d}}(t)
+  =
+  {}^{B}\mathbf p_{E_s}(t_0)
+  +
+  \lambda_s{}^{B}\mathbf R_V
+  \left(
+    {}^{V}\mathbf p_{H_s}(t)
+    -
+    {}^{V}\mathbf p_{H_s}(t_0)
+  \right).
+  \label{eq:vr-position-mapping}
+\end{equation}
+该增量形式以遥操作开始时的实际末端位置为基准，VR空间的绝对坐标用于计算控制器相对初始位姿的运动增量。
+
+控制器姿态首先相对于初始姿态计算，再经标定旋转映射到机器人基座系。末端目标姿态表示为
+\begin{equation}
+  \begin{aligned}
+    {}^{B}\mathbf R_{E_{s,d}}(t)
+    ={}^{B}\mathbf R_V
+    \left[
+      {}^{V}\mathbf R_{H_s}(t)
+      \left({}^{V}\mathbf R_{H_s}(t_0)\right)^{\mathrm T}
+    \right]
+    {}^{V}\mathbf R_B
+    {}^{B}\mathbf R_{E_s}(t_0),
+  \end{aligned}
+  \label{eq:vr-orientation-mapping}
+\end{equation}
+其中 \({}^{V}\mathbf R_B=\left({}^{B}\mathbf R_V\right)^{\mathrm T}\)。式\eqref{eq:vr-position-mapping}与式\eqref{eq:vr-orientation-mapping}分别生成末端目标位置和姿态，两者组成
+\({}^{B}\mathbf T_{E_{s,d}}(t)\)，再由已有笛卡尔控制接口执行。手柄交互量 \(u_s(t)\) 通过既定映射
+\begin{equation}
+  g_{s,d}(t)=\mathcal G_s\!\left(u_s(t)\right)
+  \label{eq:gripper-mapping}
+\end{equation}
+转换为左右夹爪的开合指令。映射函数 \(\mathcal G_s(\cdot)\) 的触发阈值与夹爪行程参数由平台配置确定。
+
+遥操作过程中，系统同步记录头部相机图像、左右腕部相机图像、双臂末端状态、夹爪状态及遥操作动作，并以动作时刻为基准完成多模态对齐。第 \(n\) 个任务回合可表示为
+\begin{equation}
+  \tau^{(n)}
+  =
+  \left\{
+    \left(
+      t_k,
+      I^{\mathrm{head}}_k,
+      I^{\mathrm{wrist},L}_k,
+      I^{\mathrm{wrist},R}_k,
+      \mathbf x_k,
+      \mathbf a_k
+    \right)
+  \right\}_{k=1}^{K_n},
+  \label{eq:demonstration-trajectory}
+\end{equation}
+其中，\(\mathbf x_k\) 包含左右末端位姿与夹爪状态，\(\mathbf a_k\) 包含对应时刻的双臂笛卡尔动作与夹爪指令。任务语言描述作为策略的语义条件与相应任务或轨迹单独关联；由传感器时间同步产生的观测量包括多视角图像、末端位姿与夹爪状态。该数据组织方式已形成从VR操作、机器人执行到多视角视觉与本体状态记录的连续链路，为后续视觉--语言--动作策略训练提供了统一样本接口。
+
+图\ref{fig:preliminary-system-loop}概括了已完成系统中数据采集与策略执行之间的接口关系。VR位姿经过增量映射后进入笛卡尔控制模块，机器人动作及多视角观测由同步记录模块组织为示范轨迹；离线训练得到的策略在部署阶段接收新的观测与语言指令，并通过同一笛卡尔接口输出动作。由此，示范阶段与推理阶段共享机器人状态、动作定义和底层执行链路。
+
+\begin{figure}[htbp]
+  \centering
+  \input{figures/preliminary-system-loop}
+  \caption{VR示范采集与策略推理的接口关系}
+  \label{fig:preliminary-system-loop}
+\end{figure}
+
+\subsection{基于OpenPI的\texorpdfstring{\(\pi_{0.5}\)}{pi0.5}模型推理闭环与策略学习理论}
+
+在示范采集链路基础上，现有系统已接入基于OpenPI部署的
+\(\pi_{0.5}\)视觉--语言--动作策略。\(\pi_{0.5}\)以视觉观测、语言指令和机器人状态为条件生成机器人动作\cite{black2025pi05}。结合本研究的平台接口，时刻 \(t\) 的策略输入写为
+\begin{equation}
+  \mathbf o_t
+  =
+  \left\{
+    I^{\mathrm{head}}_t,
+    I^{\mathrm{wrist},L}_t,
+    I^{\mathrm{wrist},R}_t,
+    \mathbf x_t,
+    \ell_t
+  \right\},
+  \label{eq:openpi-observation}
+\end{equation}
+其中，\(\ell_t\) 为运行时给定的动态任务语言指令。策略一次推理输出长度为 \(H\) 的动作块：
+\begin{equation}
+  \widehat{\mathbf A}_t
+  =
+  \pi_{\boldsymbol\theta}(\mathbf o_t)
+  =
+  \left[
+    \widehat{\mathbf a}_{t},
+    \widehat{\mathbf a}_{t+1},
+    \ldots,
+    \widehat{\mathbf a}_{t+H-1}
+  \right].
+  \label{eq:openpi-action-chunk}
+\end{equation}
+动作块中的每个元素均按照前述双臂笛卡尔动作与夹爪指令接口解释。机器人执行其中预设长度 \(h\) 的近期动作，且 \(1\leq h\leq H\)；完成该段动作后，系统重新获取多视角图像和末端状态，并结合当前语言指令构造下一轮输入。该过程形成“状态感知--策略推理--动作块执行--状态更新”的在线闭环。
+
+\paragraph{面向\(\pi_{0.5}\)的模仿学习推导。}将式\eqref{eq:demonstration-trajectory}所示的专家示范按照长度为 \(H\) 的滑动窗口组织，可得动作块示教数据集
+\begin{equation}
+  \mathcal D_{\mathrm E}
+  =
+  \left\{
+    \left(\mathbf o_t^{(n)},\mathbf A_t^{\mathrm E,(n)}\right)
+  \right\}_{n,t},
+  \qquad
+  \mathbf A_t^{\mathrm E}
+  =
+  \left[
+    \mathbf a_t^{\mathrm E},\ldots,
+    \mathbf a_{t+H-1}^{\mathrm E}
+  \right].
+  \label{eq:pi-demonstration-dataset}
+\end{equation}
+行为克隆的基本目标是在专家数据分布上最大化条件动作块的对数似然，即
+\begin{equation}
+  \boldsymbol\theta_{\mathrm{IL}}
+  =
+  \arg\min_{\boldsymbol\theta}\mathcal L_{\mathrm{IL}}(\boldsymbol\theta),
+  \qquad
+  \mathcal L_{\mathrm{IL}}(\boldsymbol\theta)
+  =
+  -\mathbb E_{(\mathbf o_t,\mathbf A_t^{\mathrm E})\sim\mathcal D_{\mathrm E}}
+  \left[
+    \log \pi_{\boldsymbol\theta}
+    \left(\mathbf A_t^{\mathrm E}\mid\mathbf o_t\right)
+  \right].
+  \label{eq:pi-il-nll}
+\end{equation}
+该目标使策略分布逼近专家在给定多视角图像、机器人状态和语言指令条件下的动作分布；动作块联合建模还保留了同一操作片段内各时刻动作之间的相关性。
+
+\(\pi_{0.5}\)采用条件流匹配表示连续动作块分布\cite{black2024pi0,black2025pi05}。对归一化后的专家动作块 \(\mathbf A_t^{\mathrm E}\)，采样高斯噪声 \(\boldsymbol\epsilon\sim\mathcal N(\mathbf 0,\mathbf I)\) 和流时间 \(\tau\in[0,1]\)，构造从数据到噪声的线性概率路径
+\begin{equation}
+  \mathbf A_t^{\tau}
+  =
+  (1-\tau)\mathbf A_t^{\mathrm E}
+  +
+  \tau\boldsymbol\epsilon,
+  \qquad
+  \mathbf u_t^{\tau}
+  =
+  \frac{\partial\mathbf A_t^{\tau}}{\partial\tau}
+  =
+  \boldsymbol\epsilon-\mathbf A_t^{\mathrm E}.
+  \label{eq:pi-flow-path}
+\end{equation}
+设动作专家输出的条件向量场为
+\(\mathbf v_{\boldsymbol\theta}(\mathbf A_t^{\tau},\mathbf o_t,\tau)\)，则模仿微调可写为条件流匹配损失
+\begin{equation}
+  \mathcal L_{\mathrm{FM}}(\boldsymbol\theta)
+  =
+  \mathbb E_{\substack{
+    (\mathbf o_t,\mathbf A_t^{\mathrm E})\sim\mathcal D_{\mathrm E},\;
+    \boldsymbol\epsilon\sim\mathcal N(\mathbf 0,\mathbf I),\;
+    \tau\sim p(\tau)}}
+  \left[
+    \left\|
+      \mathbf v_{\boldsymbol\theta}
+      (\mathbf A_t^{\tau},\mathbf o_t,\tau)
+      -
+      (\boldsymbol\epsilon-\mathbf A_t^{\mathrm E})
+    \right\|_2^2
+  \right].
+  \label{eq:pi-flow-matching-loss}
+\end{equation}
+最小化式\eqref{eq:pi-flow-matching-loss}使网络学习式\eqref{eq:pi-flow-path}的条件速度场。推理时从
+\(\mathbf A_t^{1}\sim\mathcal N(\mathbf 0,\mathbf I)\) 出发，沿
+\begin{equation}
+  \frac{\mathrm d\mathbf A_t^{\tau}}{\mathrm d\tau}
+  =
+  \mathbf v_{\boldsymbol\theta}
+  (\mathbf A_t^{\tau},\mathbf o_t,\tau)
+  \label{eq:pi-flow-ode}
+\end{equation}
+由 \(\tau=1\) 反向积分至 \(\tau=0\)，即可得到条件动作块样本
+\(\widehat{\mathbf A}_t=\mathbf A_t^0\)。以步长 \(\Delta\tau>0\) 进行欧拉离散时，单步更新为
+\begin{equation}
+  \mathbf A_t^{\tau-\Delta\tau}
+  =
+  \mathbf A_t^{\tau}
+  -
+  \Delta\tau\,
+  \mathbf v_{\boldsymbol\theta}
+  (\mathbf A_t^{\tau},\mathbf o_t,\tau).
+  \label{eq:pi-flow-euler}
+\end{equation}
+因此，式\eqref{eq:pi-flow-matching-loss}给出了示教动作对模型参数的监督关系，式\eqref{eq:pi-flow-ode}和式\eqref{eq:pi-flow-euler}则给出了从随机噪声生成连续动作块的推理过程。
+
+\paragraph{面向动作块策略的PPO推导。}为使动作块推理频率与强化学习决策频率一致，将每次重新规划视为一个宏观决策步 \(j\)。令
+\(t_j\) 为该步起始时刻，状态为 \(\mathbf s_j=\mathbf o_{t_j}\)，策略变量为实际执行的前 \(h\) 个动作组成的子块
+\begin{equation}
+  \mathbf U_j
+  =
+  \left[
+    \mathbf a_{t_j},\ldots,
+    \mathbf a_{t_j+h-1}
+  \right],
+  \qquad
+  R_j
+  =
+  \sum_{i=0}^{h-1}\gamma^i r_{t_j+i},
+  \qquad
+  \Gamma=\gamma^h.
+  \label{eq:pi-macro-transition}
+\end{equation}
+其中，\(R_j\) 汇总该动作子块执行期间的任务奖励，\(\Gamma\) 为相邻宏观决策步之间的折扣因子。PPO优化的期望回报为
+\begin{equation}
+  J(\boldsymbol\psi)
+  =
+  \mathbb E_{\pi_{\boldsymbol\psi}}
+  \left[
+    \sum_{j=0}^{J-1}\Gamma^j R_j
+  \right].
+  \label{eq:pi-ppo-return}
+\end{equation}
+根据策略梯度定理，其梯度可写为
+\begin{equation}
+  \nabla_{\boldsymbol\psi}J(\boldsymbol\psi)
+  =
+  \mathbb E_{\pi_{\boldsymbol\psi}}
+  \left[
+    \nabla_{\boldsymbol\psi}
+    \log\pi_{\boldsymbol\psi}
+    (\mathbf U_j\mid\mathbf s_j)
+    A^{\pi}(\mathbf s_j,\mathbf U_j)
+  \right].
+  \label{eq:pi-policy-gradient}
+\end{equation}
+采用价值网络 \(V_{\boldsymbol\phi}\) 时，时序差分残差与广义优势估计分别为
+\begin{align}
+  \delta_j
+  &=
+  R_j+\Gamma V_{\boldsymbol\phi}(\mathbf s_{j+1})
+  -V_{\boldsymbol\phi}(\mathbf s_j),
+  \label{eq:pi-td-error}\\
+  \widehat A_j
+  &=
+  \sum_{l=0}^{J-j-1}(\Gamma\lambda)^l\delta_{j+l}.
+  \label{eq:pi-gae}
+\end{align}
+设采样数据所用旧策略参数为 \(\boldsymbol\psi_{\mathrm{old}}\)，重要性采样比率为
+\begin{equation}
+  \rho_j(\boldsymbol\psi)
+  =
+  \frac{
+    \pi_{\boldsymbol\psi}(\mathbf U_j\mid\mathbf s_j)
+  }{
+    \pi_{\boldsymbol\psi_{\mathrm{old}}}(\mathbf U_j\mid\mathbf s_j)
+  }.
+  \label{eq:pi-ppo-ratio}
+\end{equation}
+标准策略梯度代理目标 \(\rho_j\widehat A_j\) 可能因比率偏离1而产生过大的参数更新。PPO用裁剪函数限制这一变化，得到\cite{schulman2017ppo}
+\begin{equation}
+  \mathcal L_{\mathrm{clip}}(\boldsymbol\psi)
+  =
+  \mathbb E_j
+  \left[
+    \min\left(
+      \rho_j(\boldsymbol\psi)\widehat A_j,
+      \operatorname{clip}
+      \bigl(\rho_j(\boldsymbol\psi),1-\varepsilon,1+\varepsilon\bigr)
+      \widehat A_j
+    \right)
+  \right].
+  \label{eq:pi-ppo-clip}
+\end{equation}
+将价值回归与策略熵同时纳入后，最大化形式的PPO联合目标可写为
+\begin{equation}
+  \mathcal L_{\mathrm{PPO}}(\boldsymbol\psi,\boldsymbol\phi)
+  =
+  \mathcal L_{\mathrm{clip}}(\boldsymbol\psi)
+  -c_V\,
+  \mathbb E_j
+  \left[
+    \left(V_{\boldsymbol\phi}(\mathbf s_j)-\widehat V_j\right)^2
+  \right]
+  +c_H\,
+  \mathbb E_j
+  \left[
+    \mathcal H
+    \bigl(\pi_{\boldsymbol\psi}(\cdot\mid\mathbf s_j)\bigr)
+  \right],
+  \label{eq:pi-ppo-total}
+\end{equation}
+其中，\(\widehat V_j=\widehat A_j+V_{\boldsymbol\phi}(\mathbf s_j)\) 为价值回归目标，\(c_V\) 和 \(c_H\) 分别控制价值损失与探索熵的权重。
+
+\paragraph{模仿先验与PPO的统一。}将式\eqref{eq:pi-flow-matching-loss}训练得到的参数记为 \(\boldsymbol\theta_{\mathrm{IL}}\)。若直接对\(\pi_{0.5}\)动作分布进行PPO更新，则令式\eqref{eq:pi-ppo-ratio}中的 \(\boldsymbol\psi=\boldsymbol\theta\)，并计算动作块的条件对数概率。对式\eqref{eq:pi-flow-ode}所定义的条件连续流，该概率满足瞬时变量变换公式\cite{chen2018neuralode}
+\begin{equation}
+  \frac{\mathrm d}{\mathrm d\tau}
+  \log p_{\tau}(\mathbf A_t^{\tau}\mid\mathbf o_t)
+  =
+  -\nabla_{\mathbf A}\!\cdot
+  \mathbf v_{\boldsymbol\theta}
+  (\mathbf A_t^{\tau},\mathbf o_t,\tau),
+  \label{eq:pi-flow-log-density}
+\end{equation}
+因而可由高斯基分布的密度与向量场散度的路径积分得到
+\begin{equation}
+  \log p_0(\mathbf A_t^0\mid\mathbf o_t)
+  =
+  \log p_1(\mathbf A_t^1)
+  +
+  \int_0^1
+  \nabla_{\mathbf A}\!\cdot
+  \mathbf v_{\boldsymbol\theta}
+  (\mathbf A_t^{\tau},\mathbf o_t,\tau)
+  \,\mathrm d\tau.
+  \label{eq:pi-flow-density-integral}
+\end{equation}
+式\eqref{eq:pi-flow-density-integral}从理论上建立了流策略与PPO概率比率之间的联系，但高维动作块的散度估计和反向积分会增加训练代价。
+
+一种与现有动作接口直接对应的形式是保留模仿动作块作为基础策略，并令轻量随机策略输出执行子块的残差：
+\begin{equation}
+  \begin{aligned}
+    \overline{\mathbf U}_j^{\mathrm{IL}}
+    &=
+    \mathcal S_h
+    \left[
+      \pi_{\boldsymbol\theta_{\mathrm{IL}}}(\mathbf o_{t_j})
+    \right],\\
+    \Delta\mathbf U_j
+    &\sim
+    \pi_{\boldsymbol\psi}^{\mathrm{res}}
+    (\cdot\mid\mathbf s_j),\\
+    \mathbf U_j
+    &=
+    \Pi_{\mathcal A}
+    \left(
+      \overline{\mathbf U}_j^{\mathrm{IL}}
+      +\alpha_j\Delta\mathbf U_j
+    \right),
+  \end{aligned}
+  \label{eq:pi-residual-policy}
+\end{equation}
+其中，\(\mathcal S_h[\cdot]\) 表示选取动作块的前 \(h\) 个动作，\(\Pi_{\mathcal A}\) 表示按机器人动作范围进行投影或限幅，\(\alpha_j\) 为残差幅度系数。此时式\eqref{eq:pi-ppo-ratio}可直接用残差策略
+\(\pi_{\boldsymbol\psi}^{\mathrm{res}}\) 的概率密度计算，而\(\pi_{0.5}\)负责提供具有任务语义和示教行为结构的基准动作。为抑制残差过大，可在式\eqref{eq:pi-ppo-total}中加入二次约束，形成
+\begin{equation}
+  \mathcal L_{\mathrm{IL+PPO}}
+  =
+  \mathcal L_{\mathrm{PPO}}
+  -\eta\,
+  \mathbb E_j
+  \left[
+    \left\|\Delta\mathbf U_j\right\|_2^2
+  \right],
+  \qquad \eta\geq0.
+  \label{eq:pi-il-ppo-objective}
+\end{equation}
+由此，模仿学习负责从示教数据中建立条件动作分布，PPO依据交互回报估计优势并限制策略更新幅度，残差约束则把强化调整限制在模仿先验附近，三者在统一的动作块闭环中形成完整的理论联系。
+
+\subsection{阶段性工作小结}
+
+本节总结了已经形成的机器人平台、坐标建模、示范采集、模型部署及策略学习理论基础。首先，前期工作采用统一的齐次变换与MDH表示，建立了包含四个腰轴、左右两条七自由度机械臂和两个头轴的整机上半身树状运动链，并说明了该模型在腰部、头部与底盘固定时如何简化为当前双臂七自由度变换，同时明确了末端相对位姿误差与平台控制接口。随后，前期工作通过VR参考位姿标定、位置增量映射和姿态增量映射，将双手控制器运动转换为双臂末端目标，并完成了多视角视觉、机器人状态与动作的时间对齐。最后，系统接入基于OpenPI部署的\(\pi_{0.5}\)策略，形成带动态语言条件的动作块推理闭环；条件流匹配、宏观决策步PPO以及模仿先验残差策略的推导，进一步建立了示教数据、动作生成、交互优化与物理机器人执行接口之间的理论联系。
 
 \Needspace{12\baselineskip}
-\section{研究进度与预期成果}
+\section{进度安排}
 
-\subsection{进度安排}
+研究进度将从2026年7月进入课题时开始计算，至2027年12月完成论文与答辩准备。各阶段按照“时间段--主要任务--阶段产出”编排，并在后期预留补充实验、设备维护和论文修改时间。
 
-\begin{longtable}{@{}c c p{7cm}@{}}
-  \caption{研究进度安排} \\
+\begin{longtable}{@{}p{3.0cm}p{7.0cm}p{3.4cm}@{}}
+  \caption{研究进度安排}\label{tab:research-schedule}\\
   \toprule
-  阶段 & 时间 & 主要任务与阶段成果 \\
+  时间 & 主要任务 & 阶段产出 \\
   \midrule
-  1 & 20XX年XX月--20XX年XX月 & 请填写 \\
-  2 & 20XX年XX月--20XX年XX月 & 请填写 \\
-  3 & 20XX年XX月--20XX年XX月 & 请填写 \\
+  \endfirsthead
+  \multicolumn{3}{c}{续表~\thetable}\\
+  \toprule
+  时间 & 主要任务 & 阶段产出 \\
+  \midrule
+  \endhead
+  2026.07--2026.08 &
+  梳理课题相关文献和现有平台接口，整理机器人运动学、VR遥操作采集与OpenPI推理闭环；初步界定目标任务的观测、动作、安全约束和评价维度。 &
+  前期基础总结、任务规范与评价协议初稿。 \\
+  2026.09--2026.10 &
+  审查现有VR示教回合，完成同步质量检查、异常标记、回合级数据划分和必要的定向补采；确定目标工件、工装和成功/失败判据。 &
+  版本化示教数据、数据说明和质量审查记录。 \\
+  2026.11--2027.01 &
+  训练或微调OpenPI/$\pi_{0.5}$示教策略，建立轻量模仿学习对照，完成示教数量、回合质量和观测模态对照。 &
+  可复现的模仿策略基线、训练配置和闭环评价记录。 \\
+  2027.02--2027.04 &
+  建立从零PPO与模仿初始化PPO基线，诊断先验遗忘、探索效率、训练方差和动作抖动，并据此确定受限参数更新或轻量残差路线。 &
+  标准PPO基线、候选方法定稿和实验配置。 \\
+  2027.05--2027.07 &
+  在统一预算下完成仿真对比、最终组件消融及单因素分级扰动实验，并检查动作限幅、异常终止和降级策略。 &
+  仿真实验数据、统计图表、消融结论和真机准入清单。 \\
+  2027.08--2027.09 &
+  在通过安全检查后开展真机重复试验，记录成功、节拍、误差、时延、安全触发和失败类型，复核仿真收益能否保留。 &
+  真机实验记录、失败分类和方法适用边界。 \\
+  2027.10--2027.12 &
+  补充关键重复实验与失败案例，核对数据、代码和图表，完成学位论文撰写、修改、送审与答辩准备。 &
+  学位论文定稿、复核材料和答辩材料。 \\
   \bottomrule
 \end{longtable}
 
-\subsection{预期成果}
-\placeholder{列出预期形成的理论、方法、系统、数据集、论文、专利或其他可交付成果。}
+\section{为完成课题所需的条件}
 
-\section{预期创新点}
+\subsection{已具备的条件}
 
-\placeholder{逐条说明相对于已有研究预期取得的新认识、新方法或新技术，并交代比较基准。}
+本研究已具备轮式双臂机器人平台。机器人上半身包含左右两条七自由度机械臂、四自由度腰部和二自由度头部，并配置末端夹爪、头部相机和腕部相机。现有笛卡尔控制模块具有逆运动学求解、关节限位、轨迹平滑、冗余自由度调节和奇异位形处理能力，可以作为学习策略与物理机器人之间的执行接口。
 
-\section{研究条件、外协计划及经费}
+软件与数据链路方面，前期工作已实现VR双手遥操作映射、多视角观测与机器人本体状态的同步记录、按任务回合组织的示教数据存储，以及基于OpenPI/$\pi_{0.5}$的动作块闭环推理。现有系统能够完成“示范采集--离线训练--模型部署--在线闭环执行”的基本流程，并使示范阶段和推理阶段共享机器人状态、动作定义及底层控制接口。相关算法具有可核验的公开文献与基线方法，可为模仿学习、PPO和示教先验融合方案的复现与比较提供理论和方法依据。
 
-\placeholder{说明已具备和仍需补充的软硬件、数据、试验条件，以及外协与经费安排。}
+\subsection{尚需落实的条件}
 
-\section{可能的困难、风险及解决措施}
+后续研究需要根据目标工业任务落实工件、夹具、备件和失败后复位装置，并配置相机、工作台及工件之间的标定工具。仿真研究需要建立与真机观测、动作、控制频率和重置条件相对应的环境，使仿真扰动范围能够依据实测数据设定。模型训练和多随机种子实验还需要可满足模型微调、并行PPO训练、数据备份与实验日志留存的计算和存储资源；具体GPU型号、显存与可用训练时长将在方法定型前核对。
 
-\placeholder{识别可能影响研究进度或结论有效性的风险，并给出备选方案和应对措施。}
+真机实验需要逐项确认急停、速度与位姿限幅、碰撞或力限制、环境隔离、人工接管和异常复位流程。任何关键安全条件未达到要求时，不开展真机在线探索，只保留通过安全检查的闭环推理验证。力觉或触觉信息是否纳入策略观测与评价，将以平台是否具备可标定传感器为前提；若条件不足，研究将保持视觉与本体状态路线，不虚构相应模态数据。
 
-\section{主要参考文献}
+\Needspace{12\baselineskip}
+\section{研究过程中可能遇到的问题以及解决的措施}
 
-\placeholder{在 reference.bib 中添加文献后，取消下方三行的注释。正文使用 \texttt{\string\cite\{key\}} 标注引用。}
-% \nocite{*}
-% \bibliographystyle{hithesis}
-% \bibliography{reference}
+本研究可能面临任务边界、示教数据、计算资源、PPO优化、奖励与评价、仿真--真机差异及真机安全等问题。表\ref{tab:risks-and-mitigation}按照“触发条件--可能影响--预防措施与降级方案”给出处理关系。
+
+\begin{longtable}{@{}p{2.7cm}p{3.5cm}p{3.1cm}p{4.4cm}@{}}
+  \caption{研究过程中可能遇到的问题及解决措施}\label{tab:risks-and-mitigation}\\
+  \toprule
+  问题 & 触发条件 & 可能影响 & 预防措施与降级方案 \\
+  \midrule
+  \endfirsthead
+  \multicolumn{4}{c}{续表~\thetable}\\
+  \toprule
+  问题 & 触发条件 & 可能影响 & 预防措施与降级方案 \\
+  \midrule
+  \endhead
+  任务边界过宽 &
+  截至2026年9月仍未确定主任务、工件与成功判据，或同时引入过多任务、模态和算法。 &
+  评价协议反复变化，数据与实验难以形成闭环。 &
+  优先固定一项主任务及其必要模态，其他任务只作为扩展；时间受限时收缩为双臂任务中可以独立验证的关键子任务。 \\
+  示教质量或覆盖不足 &
+  验证失败集中在特定初始位姿，或时序错位、无效回合比例超出任务协议允许范围。 &
+  模仿基线缺少可执行的初始行为，后续PPO比较失去前提。 &
+  建立回合级质量标记和失败分类，针对状态覆盖缺口定向补采；若补采成本过高，则收缩初始状态范围并采用轻量模型建立先验。 \\
+  VLA数据或算力不足 &
+  模型微调超出显存或时间预算，或闭环推理时延不能满足动作更新要求。 &
+  训练进度延误，推理时延影响任务节拍和闭环稳定性。 &
+  优先冻结感知与语言骨干，采用参数高效微调并缓存视觉特征；仍不满足条件时，以动作分块、扩散策略或轻量行为克隆作为主基线，VLA仅作为部署对照。 \\
+  PPO不收敛或先验退化 &
+  多个随机种子长期无有效轨迹，或更新后性能持续低于纯模仿策略。 &
+  无法识别示教先验的实际作用，训练时间和交互成本增加。 &
+  先检查观测与动作尺度、奖励、终止和重置逻辑，再调整学习率、残差幅度或示教约束；必要时冻结模仿策略，仅在任务末段学习小幅残差，或报告PPO的不适用边界。 \\
+  奖励与真实目标偏离 &
+  训练奖励持续上升，但独立测试中的成功、节拍或安全指标没有改善，或策略出现利用环境漏洞的行为。 &
+  训练结论不能反映真实工业任务质量。 &
+  将训练奖励、独立验收指标和硬安全约束分层处理，保留未参与调参的测试集；若稠密奖励难以校验，则回退到可直接测量的阶段进度和终端成功奖励。 \\
+  仿真--真机差异过大 &
+  策略在仿真中达到稳定性能，但真机出现明显的视觉偏差、动作时延或接触失败。 &
+  仿真结论不能直接迁移，真机试验成本和风险上升。 &
+  标定观测与动作时延，并依据实测范围设置动力学和视觉扰动；从低速、小范围开始分级验证，差异仍过大时停止在线学习，仅报告安全子集上的真机推理结果。 \\
+  真机安全或设备可用性不足 &
+  急停、碰撞或力限制、人工接管、复位流程未通过检查，或设备需要较长时间维护。 &
+  真机在线探索可能造成人员、设备或工件风险，并影响既定进度。 &
+  使用速度与位姿限幅、安全区、异常终止和旁路监控，并在2027年10月至12月预留维护及补充实验时间；任一关键条件不满足时，取消真机在线探索，以完整仿真对比和安全真机推理作为降级产出。 \\
+  \bottomrule
+\end{longtable}
+
+问题处理将优先保留“统一任务--统一基线--对比消融--边界结论”的证据链。当数据、算力或真机条件不足时，研究将先收缩任务范围和方法规模，必要基线、失败记录与安全条件在各级方案中保持不变。
+
+\section{参考文献}
+
+\bibliographystyle{hithesis}
+\bibliography{reference}
 
 % Local Variables:
 % TeX-master: "../report"

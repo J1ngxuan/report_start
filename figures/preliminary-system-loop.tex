@@ -1,0 +1,38 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  source/.style={draw=violet!65!black,rounded corners=2pt,fill=violet!7,
+    minimum height=14mm,text width=25mm,align=center,inner sep=2.5pt},
+  process/.style={draw=blue!65!black,rounded corners=2pt,fill=blue!7,
+    minimum height=14mm,text width=27mm,align=center,inner sep=2.5pt},
+  robot/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
+    minimum height=14mm,text width=28mm,align=center,inner sep=2.5pt},
+  data/.style={draw=teal!65!black,rounded corners=2pt,fill=teal!7,
+    minimum height=14mm,text width=30mm,align=center,inner sep=2.5pt},
+  arrow/.style={->,thick,blue!70!black},
+  dataarrow/.style={->,thick,teal!70!black},
+  trainarrow/.style={->,thick,densely dashed,violet!70!black},
+  feedback/.style={->,thick,orange!80!black,rounded corners=3pt}
+]
+  \node[source] (vr) {\textbf{VR遥操作}\\双手位姿\\与夹爪输入};
+  \node[process,right=5mm of vr] (mapping) {\textbf{坐标映射}\\参考位姿标定\\与运动增量};
+  \node[process,right=5mm of mapping] (controller) {\textbf{笛卡尔接口}\\逆运动学\\与轨迹约束};
+  \node[robot,right=5mm of controller] (robot) {\textbf{双臂机器人}\\末端动作执行\\与多视角感知};
+
+  \draw[arrow] (vr) -- (mapping);
+  \draw[arrow] (mapping) -- (controller);
+  \draw[arrow] (controller) -- (robot);
+
+  \node[data,below=13mm of robot] (record) {\textbf{同步记录}\\图像·末端状态\\动作·时间戳};
+  \node[data,left=7mm of record] (dataset) {\textbf{示范轨迹}\\按任务回合组织\\语言条件关联};
+  \node[source,left=7mm of dataset] (policy) {\textbf{OpenPI \(\pi_{0.5}\)}\\离线训练\\与模型部署};
+  \node[process,left=7mm of policy] (online) {\textbf{在线推理}\\新观测+动态指令\\输出动作块};
+
+  \draw[dataarrow] (robot) -- (record);
+  \draw[dataarrow] (record) -- (dataset);
+  \draw[trainarrow] (dataset) -- (policy);
+  \draw[arrow] (policy) -- (online);
+  \draw[arrow] (online.north) -- ++(0,6mm) -| (controller.south);
+  \draw[feedback] (robot.east) -- ++(5mm,0) |-
+    ([yshift=-7mm]online.south) -- (online.south);
+\end{tikzpicture}

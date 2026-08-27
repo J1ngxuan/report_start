@@ -1,0 +1,36 @@
+\begin{tikzpicture}[
+  font=\footnotesize,
+  >={Stealth[length=2.1mm]},
+  stage/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
+    minimum height=15mm,text width=28mm,align=center,inner sep=2.5pt},
+  method/.style={draw=violet!65!black,rounded corners=2pt,fill=violet!7,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  verify/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!9,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  decision/.style={draw=teal!65!black,rounded corners=2pt,fill=teal!7,
+    minimum height=15mm,text width=27mm,align=center,inner sep=2.5pt},
+  arrow/.style={->,thick,blue!70!black},
+  branch/.style={->,thick,violet!70!black,rounded corners=3pt},
+  feedback/.style={->,thick,densely dashed,orange!80!black,rounded corners=3pt}
+]
+  \node[stage] (task) {\textbf{任务建模}\\观测·动作\\约束·扰动·指标};
+  \node[stage,right=6mm of task] (data) {\textbf{示教数据}\\VR采集与对齐\\质量审查与划分};
+  \node[method,right=6mm of data] (imitation) {\textbf{模仿策略先验}\\OpenPI/$\pi_{0.5}$\\或轻量动作策略};
+  \node[decision,right=8mm of imitation] (interface) {策略架构与\\更新接口是否兼容};
+
+  \node[method,below=9mm of interface] (direct) {\textbf{兼容路线}\\模仿参数初始化\\+PPO受限更新};
+  \node[method,below=5mm of direct] (residual) {\textbf{非兼容路线}\\冻结模仿策略\\+轻量残差PPO};
+  \node[verify,left=15mm of direct,yshift=-10mm] (simulation) {\textbf{仿真验证}\\统一预算对比\\消融与分级扰动};
+  \node[verify,left=7mm of simulation] (hardware) {\textbf{安全准入与真机}\\限幅·终止·降级\\重复试验与失败分析};
+
+  \draw[arrow] (task) -- (data);
+  \draw[arrow] (data) -- (imitation);
+  \draw[arrow] (imitation) -- (interface);
+  \draw[branch] (interface) -- node[right,font=\scriptsize]{是} (direct);
+  \draw[branch] (interface.west) -- ++(-5mm,0) |- node[pos=0.18,above,font=\scriptsize]{否} (residual.north);
+  \draw[arrow] (direct.west) -- (simulation.east);
+  \draw[arrow] (residual.west) -- (simulation.east);
+  \draw[arrow] (simulation) -- (hardware);
+  \draw[feedback] (hardware.south) -- ++(0,-6mm) -|
+    node[pos=0.56,below,font=\scriptsize]{评价结果用于修正任务边界与候选机制} (task.south);
+\end{tikzpicture}
