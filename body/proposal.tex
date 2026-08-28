@@ -417,6 +417,20 @@ THE COLOSSEUM的任务与扰动组织方式如图~\ref{fig:colosseum-perturbatio
 \end{equation}
 其中，\(\mathbf x_k\) 包含左右末端位姿与夹爪状态，\(\mathbf a_k\) 包含对应时刻的双臂笛卡尔动作与夹爪指令。任务语言描述作为策略的语义条件与相应任务或轨迹单独关联；由传感器时间同步产生的观测量包括多视角图像、末端位姿与夹爪状态。该数据组织方式已形成从VR操作、机器人执行到多视角视觉与本体状态记录的连续链路，为后续视觉--语言--动作策略训练提供了统一样本接口。
 
+\paragraph{PCBA放置任务示例。}为说明上述采集链路在具体工业工况中的任务定义与数据组织，本研究选取“将印制电路板组件（Printed Circuit Board Assembly，PCBA）放置到百叶车指定承载位置”作为示例场景。该回合以右臂为操作臂，左臂保持固定；机器人先在夹爪夹持状态下携带PCBA接近百叶车，继而调整末端位置和姿态并完成放置，随后松开夹爪并撤离放置区域。在该任务中，夹爪状态1表示夹持，状态0表示松开，因而状态切换可用于标记PCBA释放事件。
+
+该示例回合共包含177个时间对齐样本。HDF5文件中的\texttt{head\_image}、\texttt{left\_arm\_image}和\texttt{right\_arm\_image}分别保存头部、左腕和右腕相机图像，单帧尺寸均为\(3\times240\times320\)；\texttt{robot\_pose}和\texttt{robot\_action}均为\(177\times14\)维数组，左右臂各占7维，依次表示三维位置、滚转--俯仰--偏航姿态和夹爪状态；\texttt{progress}以\(177\times1\)维归一化变量描述回合进度。由此，每个时间步均形成“多视角视觉--双臂末端状态--双臂动作--任务进度”的同步样本，可直接按照式\eqref{eq:demonstration-trajectory}组织为策略训练轨迹。
+
+图\ref{fig:pcba-louver-cart-demo}给出了该回合的起始、中间和结束观测，以及右手末端的三维运动轨迹。上部三幅图分别对应第0、88和176帧：前两帧处于夹持状态，结束帧处于松开状态；下部曲线以颜色和线型区分夹爪语义状态，以箭头表示工具坐标系\(+Z\)轴方向。轨迹在第120帧由夹持切换为松开，使视觉观测、末端位姿和PCBA释放事件能够在同一时间轴上对应。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{right_hand_visualization/right_hand_overview.png}
+  \caption{PCBA放置到百叶车任务的示例观测、右手轨迹与夹爪状态}
+  \label{fig:pcba-louver-cart-demo}
+\end{figure}
+\FloatBarrier
+
 图\ref{fig:preliminary-system-loop}概括了已完成系统中数据采集与策略执行之间的接口关系。VR位姿经过增量映射后进入笛卡尔控制模块，机器人动作及多视角观测由同步记录模块组织为示范轨迹；离线训练得到的策略在部署阶段接收新的观测与语言指令，并通过同一笛卡尔接口输出动作。由此，示范阶段与推理阶段共享机器人状态、动作定义和底层执行链路。
 
 \begin{figure}[htbp]
