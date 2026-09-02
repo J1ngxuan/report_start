@@ -1,0 +1,33 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  error/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
+    minimum height=17mm,text width=34mm,align=center,inner sep=2.5pt},
+  defense/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
+    minimum height=17mm,text width=34mm,align=center,inner sep=2.5pt},
+  validate/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
+    minimum height=12mm,text width=118mm,align=center,inner sep=2.5pt},
+  errarrow/.style={->,thick,red!65!black},
+  block/.style={->,thick,blue!70!black},
+  toval/.style={->,densely dashed,orange!80!black}
+]
+  \node[error] (e1) {\textbf{停车误差}\\激光雷达定位残差\\\((\delta x,\delta y,\delta\theta)\)厘米级};
+  \node[error,right=8mm of e1] (e2) {\textbf{精细阶段放大}\\进槽·落台需毫米级对准\\航向残差经臂展杠杆放大};
+  \node[error,right=8mm of e2] (e3) {\textbf{错误动作持续}\\开环动作块不感知偏差\\导致失败或损坏};
+  \draw[errarrow] (e1) -- (e2);
+  \draw[errarrow] (e2) -- (e3);
+
+  \node[defense,below=10mm of e1] (d1) {\textbf{改进点一（事前）}\\停车残差进入状态\\随机停车数据增强};
+  \node[defense,below=10mm of e2] (d2) {\textbf{改进点二（事中）}\\分阶段动作块执行\\精细阶段短块重推理};
+  \node[defense,below=10mm of e3] (d3) {\textbf{改进点三（事后）}\\时序集成不一致度检测\\模板恢复与重试};
+  \draw[block] (d1) -- node[right,font=\footnotesize]{补偿} (e1);
+  \draw[block] (d2) -- node[right,font=\footnotesize]{缩短开环} (e2);
+  \draw[block] (d3) -- node[right,font=\footnotesize]{截断} (e3);
+
+  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：基线 / +一 / +一二 / +一二三四种配置叠加，相同残差注入档位与五工位任务链，四台机器人重复};
+  \draw[toval] (d1.south) -- (d1.south |- val.north);
+  \draw[toval] (d2) -- (val);
+  \draw[toval] (d3.south) -- (d3.south |- val.north);
+  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e3),inner sep=2.5mm,
+    label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
+\end{tikzpicture}

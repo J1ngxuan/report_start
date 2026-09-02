@@ -1,0 +1,37 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  exec/.style={fill=blue!55!black,draw=blue!60!black},
+  pend/.style={fill=blue!12,draw=blue!60!black},
+  infer/.style={->,thick,orange!80!black},
+  note/.style={font=\footnotesize,align=center}
+]
+  % 阶段区域
+  \fill[gray!10] (0.2,-0.5) rectangle (5.3,3.55);
+  \fill[red!5] (5.3,-0.5) rectangle (12.4,3.55);
+  \draw[densely dashed,gray!60!black] (5.3,-0.5) -- (5.3,3.55);
+  \node[note,anchor=south west,text=gray!60!black] at (0.3,3.65)
+    {自由阶段\(\phi_t=\mathrm{free}\)：块长\(H\)，\\执行\(h_{\mathrm{free}}\approx H\)步（深色）后再推理};
+  \node[note,anchor=south west,text=red!60!black] at (5.45,3.65)
+    {精细阶段\(\phi_t=\mathrm{fine}\)：每执行\(h_{\mathrm{fine}}\)步即重推理，\\未执行部分（浅色）与后续块重叠};
+  % 时间轴
+  \draw[->,thick] (0,0) -- (12.8,0) node[below left,font=\footnotesize]{\(t\)};
+  \foreach \x in {0.4,1.1,...,12.3} \draw (\x,0.06) -- (\x,-0.06);
+  % 自由阶段：一条长块
+  \draw[pend] (0.4,0.5) rectangle (5.6,0.85);
+  \draw[exec] (0.4,0.5) rectangle (5.3,0.85);
+  \draw[infer] (0.4,-0.45) -- (0.4,-0.05);
+  % 精细阶段：错位重叠的短块，H=2.8，h_fine=0.7
+  \foreach \s/\y in {5.3/0.5,6.0/1.0,6.7/1.5,7.4/2.0,8.1/2.5,8.8/3.0} {
+    \draw[pend] (\s,\y) rectangle (\s+2.8,\y+0.35);
+    \draw[exec] (\s,\y) rectangle (\s+0.7,\y+0.35);
+    \draw[infer] (\s,-0.45) -- (\s,-0.05);
+  }
+  % 当前时刻 t 处的重叠块集合
+  \draw[densely dashed,gray!60!black] (8.5,-0.5) -- (8.5,3.45);
+  \draw[draw=gray!60!black,densely dotted,rounded corners=2pt] (8.3,0.95) rectangle (8.7,2.9);
+  \node[note,anchor=south east] at (8.25,2.95) {\(\mathcal C_t\)};
+  \node[note,anchor=north] at (8.5,-0.55) {当前时刻\(t\)};
+  \node[note,anchor=north] at (2.8,-0.55) {橙色箭头：推理时刻\(t_i\)，\(t_{i+1}=t_i+h_{\phi_{t_i}}\)};
+  \node[note,anchor=north,text width=34mm] at (11.0,-0.55) {\(\mathcal C_t\)：覆盖\(t\)的重叠块集合，\(|\mathcal C_t|=\lceil H/h_{\mathrm{fine}}\rceil\)，供改进点三计算不一致度};
+\end{tikzpicture}

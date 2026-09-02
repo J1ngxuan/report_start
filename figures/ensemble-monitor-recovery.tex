@@ -1,0 +1,44 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  data/.style={draw=teal!65!black,rounded corners=2pt,fill=teal!7,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  process/.style={draw=blue!65!black,rounded corners=2pt,fill=blue!7,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  robot/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  decide/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  recover/.style={draw=violet!65!black,rounded corners=2pt,fill=violet!7,
+    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
+  calib/.style={draw=gray!65,rounded corners=5pt,fill=gray!8,
+    text width=30mm,align=center,inner sep=2.5pt,font=\footnotesize},
+  arrow/.style={->,thick,blue!70!black},
+  dataarrow/.style={->,thick,teal!70!black},
+  alarm/.style={->,thick,red!65!black},
+  feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
+  influence/.style={->,densely dashed,gray!70}
+]
+  \node[data] (ens) {\textbf{重叠动作块}\\\(\{\widehat{\mathbf A}_{t_i}\}_{i\in\mathcal C_t}\)\\来自最近若干次推理};
+  \node[process,right=6mm of ens] (avg) {\textbf{时序集成}\\指数加权平均\\\(\bar{\mathbf a}_t\)};
+  \node[robot,right=6mm of avg] (exec) {\textbf{执行与观测}\\执行\(\bar{\mathbf a}_t\)\\获取新观测};
+  \node[process,below=8mm of ens] (inc) {\textbf{不一致度}\\\(s_t\)：块间归一化方差\\\(\tilde s_t\)：滑窗均值};
+  \node[decide,below=8mm of avg] (dec) {\textbf{报警判定}\\\(\tilde s_t>\eta_{\phi_t}\)\\连续\(n_{\mathrm{hold}}\)步？};
+  \node[recover,below=8mm of exec] (rec) {\textbf{模板恢复}\\停止当前块\\退至\(z_{\mathrm{safe}}\)→回入口位姿};
+  \node[calib,below=8mm of inc] (thr) {\textbf{阈值标定（离线）}\\成功回合\(\tilde s_t\)的95分位\\按阶段\(\phi\)分别取值};
+  \node[recover,below=8mm of rec] (retry) {\textbf{重试一次}\\重新推理\\恢复监测};
+  \node[decide,below=8mm of retry] (stop) {\textbf{报警停机}\\第二次报警\\交人工处理};
+
+  \draw[dataarrow] (ens) -- (avg);
+  \draw[arrow] (avg) -- (exec);
+  \draw[dataarrow] (ens) -- (inc);
+  \draw[arrow] (inc) -- (dec);
+  \draw[influence] (thr.east) -| (dec.south);
+  \draw[arrow] (dec.north) -- ++(0,4mm) -| node[pos=0.25,above,font=\footnotesize]{否：继续执行} (exec.south);
+  \draw[alarm] (dec) -- node[above,font=\footnotesize]{是} (rec);
+  \draw[arrow] (rec) -- (retry);
+  \draw[alarm] (retry) -- node[right,font=\footnotesize]{再次报警} (stop);
+  \draw[feedback] (retry.east) -- ++(5mm,0) |- node[pos=0.25,right,font=\footnotesize,align=left]{恢复后\\重新推理} (exec.east);
+  \draw[feedback] (exec.north) -- ++(0,5mm) -|
+    node[pos=0.25,above,font=\footnotesize]{新观测→下一次推理，新块加入\(\mathcal C_t\)} (ens.north);
+\end{tikzpicture}

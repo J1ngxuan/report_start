@@ -2,32 +2,40 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   flow/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=13mm,text width=27mm,align=center,inner sep=3pt},
+    minimum height=14mm,text width=22mm,align=center,inner sep=2.5pt},
   plant/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum height=13mm,text width=31mm,align=center,inner sep=3pt},
-  constraint/.style={draw=gray!65,rounded corners=5pt,fill=gray!8,
-    text width=30mm,align=center,inner sep=2.5pt},
+    minimum height=14mm,text width=26mm,align=center,inner sep=2.5pt},
+  errnode/.style={draw=red!55!black,rounded corners=5pt,fill=red!4,
+    text width=24mm,align=center,inner sep=2.5pt,font=\footnotesize},
   mainarrow/.style={->,thick,blue!70!black},
   feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
-  influence/.style={->,densely dashed,gray!70}
+  influence/.style={->,densely dashed,red!60!black}
 ]
-  \node[flow] (sense) {\textbf{多模态感知}\\视觉、力/触觉\\与本体状态};
-  \node[flow,right=6mm of sense] (policy) {\textbf{具身策略}\\状态表示\\与动作决策};
-  \node[flow,right=6mm of policy] (safety) {\textbf{安全/柔顺接口}\\限幅、滤波\\与低层控制};
-  \node[plant,right=6mm of safety] (plant) {\textbf{机器人--工件--环境}\\装配、插接\\与约束运动};
+  \node[flow] (nav) {\textbf{激光雷达导航}\\定位与\\工位间移动};
+  \node[flow,right=4mm of nav] (park) {\textbf{工位停靠}\\到位后\\锁定底盘};
+  \node[flow,right=4mm of park] (sense) {\textbf{多视角感知}\\头部·腕部相机\\本体状态};
+  \node[flow,right=4mm of sense] (policy) {\textbf{\(\pi_{0.5}\)策略}\\推理输出\\动作块};
+  \node[flow,right=4mm of policy] (exec) {\textbf{双臂执行}\\夹取·扫码\\进槽·落台};
+  \node[plant,below=9mm of exec] (plant) {\textbf{工位与物料}\\百叶车槽位·扫码枪\\检测台·PCBA};
 
+  \draw[mainarrow] (nav) -- (park);
+  \draw[mainarrow] (park) -- (sense);
   \draw[mainarrow] (sense) -- node[above,font=\footnotesize]{观测} (policy);
-  \draw[mainarrow] (policy) -- node[above,font=\footnotesize]{动作} (safety);
-  \draw[mainarrow] (safety) -- node[above,font=\footnotesize]{指令} (plant);
-  \draw[feedback] (plant.south) -- ++(0,-8mm) -|
-    node[pos=0.55,below,font=\footnotesize]{接触结果与环境变化反馈} (sense.south);
+  \draw[mainarrow] (policy) -- node[above,font=\footnotesize]{动作} (exec);
+  \draw[mainarrow] (exec) -- (plant);
+  \draw[feedback] (plant.west) -|
+    node[pos=0.25,below,font=\footnotesize]{接触结果与场景变化反馈} (sense.south);
 
-  \node[constraint,above=9mm of sense] (precision) {\textbf{精度约束}\\位姿误差·尺寸公差};
-  \node[constraint,above=9mm of policy] (cycle) {\textbf{节拍约束}\\控制频率·推理延迟};
-  \node[constraint,above=9mm of safety] (risk) {\textbf{安全约束}\\接触力·碰撞·失效代价};
-  \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(precision)(cycle)(risk)(plant),
-    inner sep=4mm,label={[font=\footnotesize,text=gray!70!black]above right:工业部署边界}] {};
-  \draw[influence] (precision) -- (sense);
-  \draw[influence] (cycle) -- (policy);
-  \draw[influence] (risk) -- (safety);
+  \node[errnode,above=8mm of park] (err1) {\textbf{停车误差}\\厘米级定位残差\(\boldsymbol\delta_k\)};
+  \node[errnode,above=8mm of policy] (err2) {\textbf{开环执行}\\动作块不感知偏差\\错误动作持续输出};
+  \node[errnode,above=8mm of exec] (err3) {\textbf{精细阶段放大}\\进槽·落台\\失败或损坏};
+  \draw[influence] (err1) -- (err2);
+  \draw[influence] (err2) -- (err3);
+  \draw[influence] (err1) -- (park);
+  \draw[influence] (err2) -- (policy);
+  \draw[influence] (err3) -- (exec);
+  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(err1)(err3),
+    inner sep=2.5mm,label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
+  \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(nav)(exec)(plant),
+    inner sep=3mm,label={[font=\footnotesize,text=gray!70!black]below left:模仿学习策略闭环}] {};
 \end{tikzpicture}

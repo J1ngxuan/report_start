@@ -2,33 +2,35 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   stage/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=21mm,text width=24mm,align=center,inner sep=2.5pt},
+    minimum height=21mm,text width=25mm,align=center,inner sep=2.5pt},
   validate/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
     minimum height=21mm,text width=27mm,align=center,inner sep=2.5pt},
   issue/.style={draw=red!55!black,rounded corners=4pt,fill=red!4,
-    text width=24mm,align=center,inner sep=2pt,font=\footnotesize},
+    text width=25mm,align=center,inner sep=2pt,font=\footnotesize},
   metrics/.style={draw=red!55!black,rounded corners=4pt,fill=red!4,
     text width=27mm,align=center,inner sep=2pt,font=\footnotesize},
   arrow/.style={->,thick,blue!70!black},
   feedback/.style={->,thick,densely dashed,orange!80!black,rounded corners=3pt},
   issuearrow/.style={->,densely dashed,red!65!black}
 ]
-  \node[stage] (task) {\textbf{任务与评价协议}\\观测·动作\\约束·扰动};
-  \node[stage,right=5mm of task] (prior) {\textbf{示教先验学习}\\数据采集与对齐\\$\downarrow$\\模仿策略};
-  \node[stage,right=5mm of prior] (ppo) {\textbf{PPO策略优化}\\标准基线\\与候选改进};
-  \node[validate,right=5mm of ppo] (validation) {\textbf{分级验证}\\仿真对比\\$\downarrow$\\安全准入→真机};
+  \node[stage] (pipeline) {\textbf{已跑通流水线}\\VR遥操作数采\\$\downarrow$\\微调与真机部署};
+  \node[stage,right=5mm of pipeline] (observe) {\textbf{真机失败观察}\\停靠偏差下\\进槽·落台\\成功率下降};
+  \node[stage,right=5mm of observe] (chain) {\textbf{误差传递链}\\停车误差\\$\downarrow$\\放大·持续·失败};
+  \node[validate,right=5mm of chain] (defense) {\textbf{三层设防}\\事前·事中·事后\\$\downarrow$\\叠加验证};
 
-  \draw[arrow] (task) -- (prior);
-  \draw[arrow] (prior) -- (ppo);
-  \draw[arrow] (ppo) -- (validation);
+  \draw[arrow] (pipeline) -- (observe);
+  \draw[arrow] (observe) -- (chain);
+  \draw[arrow] (chain) -- (defense);
 
-  \node[issue,below=8mm of prior] (dataissue) {数据覆盖与示教噪声};
-  \node[issue,below=8mm of ppo] (learnissue) {样本效率·先验遗忘\\稀疏奖励·动作平滑};
-  \node[metrics,below=8mm of validation] (metric) {成功·节拍·接触力\\成本·扰动退化·安全};
+  \node[issue,below=8mm of pipeline] (dataissue) {示范仅在名义\\停靠位姿下采集};
+  \node[issue,below=8mm of observe] (failissue) {厘米级偏差即\\导致精细阶段失败};
+  \node[issue,below=8mm of chain] (chainissue) {策略不感知偏差\\动作块开环持续执行};
+  \node[metrics,below=8mm of defense] (metric) {残差注入容忍曲线\\四配置·四台机器人};
 
-  \draw[issuearrow] (dataissue) -- (prior);
-  \draw[issuearrow] (learnissue) -- (ppo);
-  \draw[issuearrow] (metric) -- (validation);
+  \draw[issuearrow] (dataissue) -- (pipeline);
+  \draw[issuearrow] (failissue) -- (observe);
+  \draw[issuearrow] (chainissue) -- (chain);
+  \draw[issuearrow] (metric) -- (defense);
   \draw[feedback] (metric.south) -- ++(0,-5mm) -|
-    node[pos=0.55,below,font=\footnotesize]{多维评价反馈} (task.south);
+    node[pos=0.55,below,font=\footnotesize]{验证结果反馈数采规范与部署配置} (dataissue.south);
 \end{tikzpicture}
