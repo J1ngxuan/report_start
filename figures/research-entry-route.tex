@@ -13,10 +13,10 @@
   feedback/.style={->,thick,densely dashed,orange!80!black,rounded corners=3pt},
   issuearrow/.style={->,densely dashed,red!65!black}
 ]
-  \node[stage] (pipeline) {\textbf{已跑通流水线}\\VR遥操作数采\\$\downarrow$\\微调与真机部署};
+  \node[stage] (pipeline) {\textbf{已跑通\(\pi_{0.5}\)闭环}\\VR遥操作数采\\$\downarrow$\\OpenPI微调与真机部署};
   \node[stage,right=5mm of pipeline] (observe) {\textbf{真机失败观察}\\停靠偏差下\\进槽·落台\\成功率下降};
   \node[stage,right=5mm of observe] (chain) {\textbf{误差传递链}\\停车误差\\$\downarrow$\\放大·持续·失败};
-  \node[validate,right=5mm of chain] (defense) {\textbf{三层设防}\\事前·事中·事后\\$\downarrow$\\叠加验证};
+  \node[validate,right=5mm of chain] (defense) {\textbf{分层鲁棒增强框架}\\条件化学习\\自适应控制\\运行时容错};
 
   \draw[arrow] (pipeline) -- (observe);
   \draw[arrow] (observe) -- (chain);

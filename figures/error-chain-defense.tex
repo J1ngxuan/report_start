@@ -4,7 +4,7 @@
   error/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
     minimum height=17mm,text width=34mm,align=center,inner sep=2.5pt},
   defense/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=17mm,text width=34mm,align=center,inner sep=2.5pt},
+    minimum height=25mm,text width=34mm,align=center,inner sep=2.5pt},
   validate/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
     minimum height=12mm,text width=118mm,align=center,inner sep=2.5pt},
   errarrow/.style={->,thick,red!65!black},
@@ -17,14 +17,14 @@
   \draw[errarrow] (e1) -- (e2);
   \draw[errarrow] (e2) -- (e3);
 
-  \node[defense,below=10mm of e1] (d1) {\textbf{改进点一（事前）}\\停车残差进入状态\\随机停车数据增强};
-  \node[defense,below=10mm of e2] (d2) {\textbf{改进点二（事中）}\\分阶段动作块执行\\精细阶段短块重推理};
-  \node[defense,below=10mm of e3] (d3) {\textbf{改进点三（事后）}\\时序集成不一致度检测\\模板恢复与重试};
+  \node[defense,below=10mm of e1] (d1) {\textbf{停车残差条件化}\\\textbf{模仿学习方法}\\残差状态增广\\随机停靠示范};
+  \node[defense,below=10mm of e2] (d2) {\textbf{阶段自适应}\\\textbf{动作块控制方法}\\执行时域调节\\RTC连续衔接};
+  \node[defense,below=10mm of e3] (d3) {\textbf{预测一致性驱动的}\\\textbf{运行时容错方法}\\跨块残差检测\\模板恢复或停机};
   \draw[block] (d1) -- node[right,font=\footnotesize]{补偿} (e1);
   \draw[block] (d2) -- node[right,font=\footnotesize]{缩短开环} (e2);
   \draw[block] (d3) -- node[right,font=\footnotesize]{截断} (e3);
 
-  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：基线 / +一 / +一二 / +一二三四种配置叠加，相同残差注入档位与五工位任务链，四台机器人重复};
+  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：C0基线 / C1条件化学习 / C2叠加自适应控制 / C3完整框架，相同残差注入档位与五工位任务链，四台机器人重复};
   \draw[toval] (d1.south) -- (d1.south |- val.north);
   \draw[toval] (d2) -- (val);
   \draw[toval] (d3.south) -- (d3.south |- val.north);

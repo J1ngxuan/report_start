@@ -1,4 +1,4 @@
-\begin{tikzpicture}[
+\begin{tikzpicture}[scale=0.94,transform shape,
   font=\small,
   >={Stealth[length=2.2mm]},
   source/.style={draw=violet!65!black,rounded corners=2pt,fill=violet!7,
@@ -25,17 +25,16 @@
 
   \node[data,below=13mm of robot] (record) {\textbf{同步记录}\\图像·末端状态\\动作·时间戳};
   \node[data,left=7mm of record] (dataset) {\textbf{示范数据集}\\按任务回合组织\\语言指令关联};
-  \node[source,left=7mm of dataset] (pi) {\textbf{OpenPI \(\pi_{0.5}\)微调}\\流匹配动作专家\\主线模型};
-  \node[source,below=4mm of pi] (act) {\textbf{ACT微调}\\CVAE+动作分块\\对照模型};
-  \node[process,left=7mm of pi] (online) {\textbf{真机部署}\\在线推理\\输出动作块};
+  \node[source,left=7mm of dataset] (pi) {\textbf{OpenPI \(\pi_{0.5}\)微调}\\流匹配动作头\\任务示范适配};
+  \node[process,left=7mm of pi] (online) {\textbf{OpenPI推理}\\多视角·本体状态\\输出连续动作块};
+  \node[process,below=4mm of pi] (state) {\textbf{任务状态机}\\动态低层\\语言指令};
 
   \draw[dataarrow] (robot) -- (record);
   \draw[dataarrow] (record) -- (dataset);
   \draw[trainarrow] (dataset) -- (pi);
-  \draw[trainarrow] (dataset.south) |- (act.east);
   \draw[arrow] (pi) -- (online);
-  \draw[arrow] (act.west) -| (online.south);
+  \draw[arrow] (state.west) -| (online.south);
   \draw[arrow] (online.north) -- ++(0,6mm) -| (controller.south);
-  \draw[feedback] (robot.east) -- ++(5mm,0) |- ([yshift=-6mm]act.south)
-    -| node[pos=0.25,below,font=\footnotesize]{部署时新观测反馈} ([xshift=-4mm]online.west) -- (online.west);
+  \draw[feedback] (robot.east) -- ++(5mm,0) |- ([yshift=-5mm]state.south)
+    -| node[pos=0.35,below,font=\footnotesize]{部署时新观测反馈} (online.south);
 \end{tikzpicture}
