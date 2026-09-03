@@ -26,9 +26,9 @@
   \draw[feedback] (plant.west) -|
     node[pos=0.25,below,font=\footnotesize]{接触结果与场景变化反馈} (sense.south);
 
-  \node[errnode,above=8mm of park] (err1) {\textbf{停车误差}\\厘米级定位残差\(\boldsymbol\delta_k\)};
-  \node[errnode,above=8mm of policy] (err2) {\textbf{开环执行}\\动作块不感知偏差\\错误动作持续输出};
-  \node[errnode,above=8mm of exec] (err3) {\textbf{精细阶段放大}\\进槽·落台\\失败或损坏};
+  \node[errnode,above=8mm of park] (err1) {\textbf{工位停靠残差}\\厘米量级平移\\度量级航向};
+  \node[errnode,above=8mm of policy] (err2) {\textbf{策略级开环}\\块内不接收新观测\\错误动作可能持续};
+  \node[errnode,above=8mm of exec] (err3) {\textbf{精细阶段显现}\\进槽·落台\\失败或损坏};
   \draw[influence] (err1) -- (err2);
   \draw[influence] (err2) -- (err3);
   \draw[influence] (err1) -- (park);
@@ -37,5 +37,5 @@
   \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(err1)(err3),
     inner sep=2.5mm,label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
   \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(nav)(exec)(plant),
-    inner sep=3mm,label={[font=\footnotesize,text=gray!70!black]below left:模仿学习策略闭环}] {};
+    inner sep=3mm,label={[font=\footnotesize,text=gray!70!black]below left:块间视觉闭环}] {};
 \end{tikzpicture}

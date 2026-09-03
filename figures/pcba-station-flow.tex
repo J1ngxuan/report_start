@@ -20,7 +20,7 @@
   \draw[mainarrow] (n3) -- node[above,font=\footnotesize]{原地} (n4);
   \draw[mainarrow] (n4) -- node[above,font=\footnotesize]{导航} (n5);
 
-  % 停车残差示意：以任一工位 k 为例
+  % 工位停靠残差示意：以任一工位 k 为例
   \coordinate (o) at ($(n3.south)+(0,-30mm)$);
   \coordinate (b) at ($(o)+(6mm,-4mm)$);
   \draw[fill=gray!15,draw=gray!60] ($(o)+(-24mm,12mm)$) rectangle ($(o)+(24mm,17mm)$)
@@ -33,14 +33,14 @@
     \draw[actual] (0,0) -- (0,10mm) node[right,font=\footnotesize]{\(x_B\)};
     \draw[actual] (0,0) -- (-10mm,0) node[below,font=\footnotesize]{\(y_B\)};
     \draw[densely dashed,orange!80!black] (-7mm,-9mm) rectangle (7mm,2mm);
-    \node[below,font=\footnotesize,text=orange!80!black] at (0,-9mm) {\(\{B\}\)实际底盘};
+  \node[below,font=\footnotesize,text=orange!80!black] at (0,-9mm) {\(\{B\}\)实际底盘};
   \end{scope}
   \fill[orange!80!black] (b) circle (0.5mm);
-  \draw[err] (o) -- node[pos=0.6,below right,font=\footnotesize,text=red!65!black]{\(\delta\mathbf p_k\)} (b);
+  \draw[err] (o) -- node[pos=0.6,below right,font=\footnotesize,text=red!65!black]{\(\delta\mathbf p_k^{\mathrm{ref}}\)} (b);
   \draw[err] ($(b)+(90:7mm)$) arc[start angle=90,end angle=105,radius=7mm]
-    node[pos=0.5,above,font=\footnotesize,text=red!65!black]{\(\delta\theta_k\)};
+    node[pos=0.5,above,font=\footnotesize,text=red!65!black]{\(\delta\theta_k^{\mathrm{ref}}\)};
 
   \node[info,left=16mm of o,yshift=2mm] (nom) {\textbf{名义停靠位姿}\\\({}^{O}\mathbf T_{S_k}\)\\示范采集与任务定义的参考};
-  \node[info,right=16mm of o,yshift=2mm] (act) {\textbf{实际停靠位姿}\\\({}^{O}\mathbf T_B\)\\由激光雷达定位给出};
-  \node[info,below=3mm of nom,text width=30mm] (res) {\textbf{停车残差}\\\(\Delta\mathbf T_k=({}^{O}\mathbf T_{S_k})^{-1}\,{}^{O}\mathbf T_B\)\\\(\boldsymbol\delta_k=(\delta x_k,\delta y_k,\delta\theta_k)\)};
+  \node[info,right=16mm of o,yshift=2mm] (act) {\textbf{实际参考位姿}\\\({}^{O}\mathbf T_B^{\mathrm{ref}}\)\\由独立工位测量给出};
+  \node[info,below=3mm of nom,text width=34mm] (res) {\textbf{三类停靠记录}\\导航指令\(\boldsymbol\delta_k^{\mathrm{cmd}}\)\\策略输入\(\widehat{\boldsymbol\delta}_k^{\mathrm{loc}}\)·评价分档\(\boldsymbol\delta_k^{\mathrm{ref}}\)};
 \end{tikzpicture}

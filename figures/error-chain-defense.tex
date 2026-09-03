@@ -11,20 +11,20 @@
   block/.style={->,thick,blue!70!black},
   toval/.style={->,densely dashed,orange!80!black}
 ]
-  \node[error] (e1) {\textbf{停车误差}\\激光雷达定位残差\\\((\delta x,\delta y,\delta\theta)\)厘米级};
-  \node[error,right=8mm of e1] (e2) {\textbf{精细阶段放大}\\进槽·落台需毫米级对准\\航向残差经臂展杠杆放大};
-  \node[error,right=8mm of e2] (e3) {\textbf{错误动作持续}\\开环动作块不感知偏差\\导致失败或损坏};
+  \node[error] (e1) {\textbf{工位停靠残差}\\位置残差：厘米量级\\航向残差：度量级};
+  \node[error,right=8mm of e1] (e2) {\textbf{精细阶段显现}\\位置残差近似等幅传递\\航向项随目标距离增加};
+  \node[error,right=8mm of e2] (e3) {\textbf{错误动作持续}\\块内不接收新观测\\可能导致失败或损坏};
   \draw[errarrow] (e1) -- (e2);
   \draw[errarrow] (e2) -- (e3);
 
-  \node[defense,below=10mm of e1] (d1) {\textbf{停车残差条件化}\\\textbf{模仿学习方法}\\残差状态增广\\随机停靠示范};
+  \node[defense,below=10mm of e1] (d1) {\textbf{停靠残差条件化}\\\textbf{模仿学习方法}\\残差状态增广\\随机停靠示范};
   \node[defense,below=10mm of e2] (d2) {\textbf{阶段自适应}\\\textbf{动作块控制方法}\\执行时域调节\\RTC连续衔接};
   \node[defense,below=10mm of e3] (d3) {\textbf{预测一致性驱动的}\\\textbf{运行时容错方法}\\跨块残差检测\\模板恢复或停机};
-  \draw[block] (d1) -- node[right,font=\footnotesize]{补偿} (e1);
+  \draw[block] (d1) -- node[right,font=\footnotesize]{条件化适应} (e1);
   \draw[block] (d2) -- node[right,font=\footnotesize]{缩短开环} (e2);
   \draw[block] (d3) -- node[right,font=\footnotesize]{截断} (e3);
 
-  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：C0基线 / C1条件化学习 / C2叠加自适应控制 / C3完整框架，相同残差注入档位与五工位任务链，四台机器人重复};
+  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：C0基线 / C1条件化学习 / C2自适应控制 / C3检测与恢复，相同残差档位与五子任务链，四台机器人重复};
   \draw[toval] (d1.south) -- (d1.south |- val.north);
   \draw[toval] (d2) -- (val);
   \draw[toval] (d3.south) -- (d3.south |- val.north);

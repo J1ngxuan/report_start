@@ -24,11 +24,12 @@
   \node[robot,right=6mm of rtc] (exec) {\textbf{执行与观测}\\执行RTC动作块\\获取新观测};
   \node[data,below=8mm of prev] (raw) {\textbf{当前原始提议}\\新观测+\(\pi_{0.5}\)\\固定参考噪声};
   \node[process,below=8mm of rtc] (inc) {\textbf{跨块一致性残差}\\归一化\(r_i\)\\滑动均值\(\widetilde r_i\)};
-  \node[decide,below=8mm of exec] (dec) {\textbf{报警判定}\\\(\widetilde r_i>\eta_{\phi_{t_i}}\)\\连续\(n_{\mathrm{hold}}\)次？};
+  \node[decide,below=8mm of exec] (dec) {\textbf{报警判定}\\全回合联合阈值\\\(g_i>\eta_b\)？};
   \node[recover,below=8mm of dec] (rec) {\textbf{模板恢复}\\停止当前块\\退至\(z_{\mathrm{safe}}\)→回入口位姿};
-  \node[calib,below=8mm of raw] (thr) {\textbf{阈值标定（离线）}\\成功回合\(\widetilde r_i\)的95分位\\按阶段\(\phi\)分别取值};
-  \node[recover,below=8mm of rec] (retry) {\textbf{重试一次}\\重新推理\\恢复监测};
-  \node[decide,below=8mm of retry] (stop) {\textbf{报警停机}\\第二次报警\\交人工处理};
+  \node[calib,below=8mm of raw] (thr) {\textbf{阈值标定（离线）}\\独立成功集的全回合最大值\\按机器人取95分位};
+  \node[calib,below=8mm of inc] (shadow) {\textbf{C3-D离线影子}\\顺序回放冻结C2-A轨迹\\只记录首次报警};
+  \node[recover,below=8mm of rec] (retry) {\textbf{重试当前子任务一次}\\成功则继续后序任务\\整链不再允许第二次恢复};
+  \node[decide,below=8mm of retry] (stop) {\textbf{安全停机}\\条件不满足或再次报警\\交人工处理};
 
   \draw[dataarrow] (prev) -- (rtc);
   \draw[dataarrow] (raw.north) |- (rtc.south);
@@ -37,10 +38,11 @@
   \draw[dataarrow] (raw) -- (inc);
   \draw[arrow] (inc) -- (dec);
   \draw[influence] (thr.east) -| (dec.south);
+  \draw[influence] (dec.south west) -- (shadow.north east);
   \draw[arrow] (dec.north) -- node[right,font=\footnotesize]{否：继续} (exec.south);
-  \draw[alarm] (dec) -- node[above,font=\footnotesize]{是} (rec);
+  \draw[alarm] (dec) -- node[above,font=\footnotesize]{C3-R：是} (rec);
   \draw[arrow] (rec) -- (retry);
-  \draw[alarm] (retry) -- node[right,font=\footnotesize]{再次报警} (stop);
+  \draw[alarm] (retry) -- node[right,font=\footnotesize]{不安全/再次报警} (stop);
   \draw[feedback] (retry.east) -- ++(5mm,0) |- node[pos=0.25,right,font=\footnotesize,align=left]{恢复后\\重新推理} (exec.east);
   \draw[feedback] (exec.north) -- ++(0,5mm) -|
     node[pos=0.25,above,font=\footnotesize]{新观测→下一次\(\pi_{0.5}\)推理} (raw.north);
