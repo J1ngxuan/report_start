@@ -2,39 +2,45 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   flow/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=14mm,text width=22mm,align=center,inner sep=2.5pt},
+    minimum width=25mm,minimum height=19mm,text width=21mm,
+    align=center,inner sep=2pt,outer sep=0pt},
   plant/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum height=14mm,text width=26mm,align=center,inner sep=2.5pt},
+    minimum width=29mm,minimum height=16mm,text width=25mm,
+    align=center,inner sep=2pt,outer sep=0pt},
   errnode/.style={draw=red!55!black,rounded corners=5pt,fill=red!4,
-    text width=24mm,align=center,inner sep=2.5pt,font=\footnotesize},
+    minimum width=27mm,minimum height=20mm,text width=23mm,
+    align=center,inner sep=2pt,outer sep=0pt,font=\footnotesize},
+  edgelabel/.style={fill=white,inner xsep=1.5pt,inner ysep=0.8pt,
+    font=\footnotesize},
   mainarrow/.style={->,thick,blue!70!black},
   feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
   influence/.style={->,densely dashed,red!60!black}
 ]
   \node[flow] (nav) {\textbf{激光雷达导航}\\定位与\\工位间移动};
-  \node[flow,right=4mm of nav] (park) {\textbf{工位停靠}\\到位后\\锁定底盘};
-  \node[flow,right=4mm of park] (sense) {\textbf{多视角感知}\\头部·腕部相机\\本体状态};
-  \node[flow,right=4mm of sense] (policy) {\textbf{\(\pi_{0.5}\)策略}\\推理输出\\动作块};
-  \node[flow,right=4mm of policy] (exec) {\textbf{双臂执行}\\夹取·扫码\\进槽·落台};
-  \node[plant,below=9mm of exec] (plant) {\textbf{工位与物料}\\百叶车槽位·扫码枪\\检测台·PCBA};
+  \node[flow,right=3mm of nav] (park) {\textbf{工位停靠}\\到位后\\锁定底盘};
+  \node[flow,right=3mm of park] (sense) {\textbf{多视角感知}\\头部·腕部相机\\本体状态};
+  \node[flow,right=3mm of sense] (policy) {\textbf{\(\pi_{0.5}\)策略}\\推理输出\\动作块};
+  \node[flow,right=3mm of policy] (exec) {\textbf{双臂执行}\\夹取·扫码\\插槽·放置};
+  \node[plant,below=10mm of exec] (plant) {\textbf{工位与物料}\\百叶车槽位·扫码枪\\检测台·PCBA};
 
   \draw[mainarrow] (nav) -- (park);
   \draw[mainarrow] (park) -- (sense);
-  \draw[mainarrow] (sense) -- node[above,font=\footnotesize]{观测} (policy);
-  \draw[mainarrow] (policy) -- node[above,font=\footnotesize]{动作} (exec);
+  \draw[mainarrow] (sense) -- node[edgelabel,above]{观测} (policy);
+  \draw[mainarrow] (policy) -- node[edgelabel,above]{动作} (exec);
   \draw[mainarrow] (exec) -- (plant);
-  \draw[feedback] (plant.west) -|
-    node[pos=0.25,below,font=\footnotesize]{接触结果与场景变化反馈} (sense.south);
+  \draw[feedback] (plant.west) --
+    node[edgelabel,below]{接触结果与场景变化反馈}
+    (sense.south |- plant.west) -- (sense.south);
 
-  \node[errnode,above=8mm of park] (err1) {\textbf{工位停靠残差}\\厘米量级平移\\度量级航向};
-  \node[errnode,above=8mm of policy] (err2) {\textbf{策略级开环}\\块内不接收新观测\\错误动作可能持续};
-  \node[errnode,above=8mm of exec] (err3) {\textbf{精细阶段显现}\\进槽·落台\\失败或损坏};
-  \draw[influence] (err1) -- (err2);
-  \draw[influence] (err2) -- (err3);
-  \draw[influence] (err1) -- (park);
-  \draw[influence] (err2) -- (policy);
-  \draw[influence] (err3) -- (exec);
-  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(err1)(err3),
+  \node[errnode,above=9mm of park] (err1) {\textbf{工位停靠残差}\\厘米量级平移\\度量级航向};
+  \node[errnode,above=9mm of policy] (err2) {\textbf{策略级开环}\\块内不接收新观测\\错误动作可能持续};
+  \node[errnode,above=9mm of exec] (err3) {\textbf{精细操作阶段显现}\\插槽·放置\\失败或损坏};
+  \draw[influence] (err1.east) -- (err2.west);
+  \draw[influence] (err2.east) -- (err3.west);
+  \draw[influence] (err1.south) -- (park.north);
+  \draw[influence] (err2.south) -- (policy.north);
+  \draw[influence] (err3.south) -- (exec.north);
+  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(err1)(err2)(err3),
     inner sep=2.5mm,label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
   \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(nav)(exec)(plant),
     inner sep=3mm,label={[font=\footnotesize,text=gray!70!black]below left:块间视觉闭环}] {};

@@ -2,32 +2,42 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   error/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
-    minimum height=17mm,text width=34mm,align=center,inner sep=2.5pt},
+    minimum width=36mm,minimum height=11mm,text width=34mm,
+    align=center,inner sep=2.5pt,outer sep=0pt},
   defense/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=25mm,text width=34mm,align=center,inner sep=2.5pt},
+    minimum width=36mm,minimum height=15mm,text width=34mm,
+    align=center,inner sep=2.5pt,outer sep=0pt},
   validate/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum height=12mm,text width=118mm,align=center,inner sep=2.5pt},
+    minimum height=9mm,text width=112mm,align=center,inner sep=2.5pt,
+    outer sep=0pt},
   errarrow/.style={->,thick,red!65!black},
   block/.style={->,thick,blue!70!black},
-  toval/.style={->,densely dashed,orange!80!black}
+  depend/.style={->,densely dashed,blue!60!black},
+  toval/.style={->,densely dashed,orange!80!black},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
+    text=blue!65!black}
 ]
-  \node[error] (e1) {\textbf{工位停靠残差}\\位置残差：厘米量级\\航向残差：度量级};
-  \node[error,right=8mm of e1] (e2) {\textbf{精细阶段显现}\\位置残差近似等幅传递\\航向项随目标距离增加};
-  \node[error,right=8mm of e2] (e3) {\textbf{错误动作持续}\\块内不接收新观测\\可能导致失败或损坏};
-  \draw[errarrow] (e1) -- (e2);
-  \draw[errarrow] (e2) -- (e3);
+  \node[error] (e1) {工位停靠残差};
+  \node[error,right=11mm of e1] (e2) {精细操作阶段显现};
+  \node[error,right=11mm of e2] (e3) {错误动作持续};
+  \draw[errarrow] (e1.east) -- node[linklabel,text=red!60!black,above]{传递} (e2.west);
+  \draw[errarrow] (e2.east) -- node[linklabel,text=red!60!black,above]{放大} (e3.west);
 
-  \node[defense,below=10mm of e1] (d1) {\textbf{停靠残差条件化}\\\textbf{模仿学习方法}\\残差状态增广\\随机停靠示范};
-  \node[defense,below=10mm of e2] (d2) {\textbf{阶段自适应}\\\textbf{动作块控制方法}\\执行时域调节\\RTC连续衔接};
-  \node[defense,below=10mm of e3] (d3) {\textbf{预测一致性驱动的}\\\textbf{运行时容错方法}\\跨块残差检测\\模板恢复或停机};
-  \draw[block] (d1) -- node[right,font=\footnotesize]{条件化适应} (e1);
-  \draw[block] (d2) -- node[right,font=\footnotesize]{缩短开环} (e2);
-  \draw[block] (d3) -- node[right,font=\footnotesize]{截断} (e3);
+  \node[defense,below=11mm of e1] (d1) {\textbf{停靠残差条件化}\\\textbf{模仿学习方法}};
+  \node[defense,below=11mm of e2] (d2) {\textbf{阶段自适应}\\\textbf{动作块控制方法}};
+  \node[defense,below=11mm of e3] (d3) {\textbf{预测一致性驱动的}\\\textbf{运行时容错方法}};
+  \draw[block] (d1.north) -- node[linklabel,right=1mm]{削减源头残差} (e1.south);
+  \draw[block] (d2.north) -- node[linklabel,right=1mm]{缩短开环区间} (e2.south);
+  \draw[block] (d3.north) -- node[linklabel,right=1mm]{截断失败执行} (e3.south);
 
-  \node[validate,below=8mm of d2] (val) {\textbf{整体验证}：C0基线 / C1条件化学习 / C2自适应控制 / C3检测与恢复，相同残差档位与五子任务链，四台机器人重复};
-  \draw[toval] (d1.south) -- (d1.south |- val.north);
-  \draw[toval] (d2) -- (val);
-  \draw[toval] (d3.south) -- (d3.south |- val.north);
-  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e3),inner sep=2.5mm,
+  \draw[depend] (d1.south) to[out=-90,in=-90,looseness=0.7]
+    node[linklabel,below]{容忍曲线作为评价基准} (d2.south);
+  \draw[depend] (d2.south) to[out=-90,in=-90,looseness=0.7]
+    node[linklabel,below]{密集重叠预测作为失败信号} (d3.south);
+  \draw[depend] ([xshift=-6mm]d1.south) to[out=-90,in=-90,looseness=0.55]
+    node[linklabel,below]{残差注入提供可控失败样本} ([xshift=6mm]d3.south);
+
+  \node[validate,below=26mm of d2] (val) {逐层叠加验证：C0基线 \(\rightarrow\) C1 \(\rightarrow\) C2 \(\rightarrow\) C3，相同残差注入协议与五子任务链};
+  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e2)(e3),inner sep=2.5mm,
     label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
 \end{tikzpicture}

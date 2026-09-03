@@ -2,9 +2,12 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   task/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=17mm,text width=23mm,align=center,inner sep=2pt},
+    minimum height=18mm,text width=23mm,align=center,inner sep=2pt},
   info/.style={draw=gray!65,rounded corners=5pt,fill=gray!8,
-    text width=30mm,align=center,inner sep=2.5pt,font=\footnotesize},
+    minimum height=19mm,text width=32mm,align=center,inner sep=2.5pt,
+    font=\footnotesize},
+  arrowlabel/.style={fill=white,inner xsep=1.2pt,inner ysep=0.6pt,
+    font=\footnotesize},
   mainarrow/.style={->,thick,blue!70!black},
   nominal/.style={->,thick,black},
   actual/.style={->,thick,densely dashed,orange!80!black},
@@ -15,32 +18,44 @@
   \node[task,right=5mm of n2] (n3) {\textbf{检测台}\\取出上一块\\{\scriptsize\texttt{unload\_tester}}};
   \node[task,right=5mm of n3] (n4) {\textbf{检测台}\\放入当前块\\{\scriptsize\texttt{load\_tester}}};
   \node[task,right=5mm of n4] (n5) {\textbf{下料百叶车}\\放入上一块\\{\scriptsize\texttt{rack\_place}}};
-  \draw[mainarrow] (n1) -- node[above,font=\footnotesize]{导航} (n2);
-  \draw[mainarrow] (n2) -- node[above,font=\footnotesize]{导航} (n3);
-  \draw[mainarrow] (n3) -- node[above,font=\footnotesize]{原地} (n4);
-  \draw[mainarrow] (n4) -- node[above,font=\footnotesize]{导航} (n5);
+  \draw[mainarrow] (n1) -- node[above,arrowlabel]{导航} (n2);
+  \draw[mainarrow] (n2) -- node[above,arrowlabel]{导航} (n3);
+  \draw[mainarrow] (n3) -- node[above,arrowlabel]{原地} (n4);
+  \draw[mainarrow] (n4) -- node[above,arrowlabel]{导航} (n5);
 
   % 工位停靠残差示意：以任一工位 k 为例
   \coordinate (o) at ($(n3.south)+(0,-30mm)$);
-  \coordinate (b) at ($(o)+(6mm,-4mm)$);
-  \draw[fill=gray!15,draw=gray!60] ($(o)+(-24mm,12mm)$) rectangle ($(o)+(24mm,17mm)$)
-    node[midway,font=\footnotesize]{第\(k\)个工位设备（百叶车 / 扫码枪 / 检测台）};
+  \coordinate (b) at ($(o)+(12mm,-7mm)$);
+  \draw[fill=gray!15,draw=gray!60]
+    ($(o)+(-29mm,12mm)$) rectangle ($(o)+(29mm,23mm)$);
+  \node[font=\footnotesize,align=center,text width=52mm]
+    at ($(o)+(0,17.5mm)$)
+    {第\(k\)个工位设备\\（百叶车 / 扫码枪 / 检测台）};
   \draw[nominal] (o) -- ++(0,10mm) node[left,font=\footnotesize]{\(x_{S_k}\)};
   \draw[nominal] (o) -- ++(-10mm,0) node[below,font=\footnotesize]{\(y_{S_k}\)};
   \fill (o) circle (0.5mm);
-  \node[below right=0mm and -1mm of o,font=\footnotesize] {\(\{S_k\}\)};
+  \node[below left=0.5mm and 0mm of o,font=\footnotesize] {\(\{S_k\}\)};
   \begin{scope}[shift={(b)},rotate=15]
     \draw[actual] (0,0) -- (0,10mm) node[right,font=\footnotesize]{\(x_B\)};
     \draw[actual] (0,0) -- (-10mm,0) node[below,font=\footnotesize]{\(y_B\)};
     \draw[densely dashed,orange!80!black] (-7mm,-9mm) rectangle (7mm,2mm);
-  \node[below,font=\footnotesize,text=orange!80!black] at (0,-9mm) {\(\{B\}\)实际底盘};
+    \node[below,font=\footnotesize,text=orange!80!black,fill=white,
+      inner sep=1pt] at (0,-11mm) {\(\{B\}\)实际底盘};
   \end{scope}
   \fill[orange!80!black] (b) circle (0.5mm);
-  \draw[err] (o) -- node[pos=0.6,below right,font=\footnotesize,text=red!65!black]{\(\delta\mathbf p_k^{\mathrm{ref}}\)} (b);
+  \coordinate (pturn) at (b |- o);
+  \draw[err] (o) -| (b);
+  \node[above=1mm,font=\scriptsize,text=red!65!black,fill=white,
+    inner sep=1pt] at ($(o)!0.38!(pturn)$)
+    {\(\delta\mathbf p_k^{\mathrm{ref}}\)};
   \draw[err] ($(b)+(90:7mm)$) arc[start angle=90,end angle=105,radius=7mm]
-    node[pos=0.5,above,font=\footnotesize,text=red!65!black]{\(\delta\theta_k^{\mathrm{ref}}\)};
+    node[pos=0.5,above,fill=white,inner sep=1pt,
+      font=\scriptsize,text=red!65!black]{\(\delta\theta_k^{\mathrm{ref}}\)};
 
-  \node[info,left=16mm of o,yshift=2mm] (nom) {\textbf{名义停靠位姿}\\\({}^{O}\mathbf T_{S_k}\)\\示范采集与任务定义的参考};
-  \node[info,right=16mm of o,yshift=2mm] (act) {\textbf{实际参考位姿}\\\({}^{O}\mathbf T_B^{\mathrm{ref}}\)\\由独立工位测量给出};
-  \node[info,below=3mm of nom,text width=34mm] (res) {\textbf{三类停靠记录}\\导航指令\(\boldsymbol\delta_k^{\mathrm{cmd}}\)\\策略输入\(\widehat{\boldsymbol\delta}_k^{\mathrm{loc}}\)·评价分档\(\boldsymbol\delta_k^{\mathrm{ref}}\)};
+  \node[info,left=20mm of o,yshift=1mm] (nom)
+    {\textbf{名义停靠位姿}\\\({}^{O}\mathbf T_{S_k}\)\\示范采集与任务定义的参考};
+  \node[info,right=20mm of o,yshift=1mm] (act)
+    {\textbf{实际参考位姿}\\\({}^{O}\mathbf T_B^{\mathrm{ref}}\)\\由独立工位测量给出};
+  \node[info,below=4mm of nom] (res)
+    {\textbf{三类停靠记录}\\导航指令\(\boldsymbol\delta_k^{\mathrm{cmd}}\)\\策略输入\(\widehat{\boldsymbol\delta}_k^{\mathrm{loc}}\)\\评价分档\(\boldsymbol\delta_k^{\mathrm{ref}}\)};
 \end{tikzpicture}
