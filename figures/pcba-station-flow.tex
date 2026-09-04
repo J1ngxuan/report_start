@@ -2,28 +2,31 @@
   font=\small,
   >={Stealth[length=2.2mm]},
   task/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum height=18mm,text width=23mm,align=center,inner sep=2pt},
-  info/.style={draw=gray!65,rounded corners=5pt,fill=gray!8,
-    minimum height=19mm,text width=32mm,align=center,inner sep=2.5pt,
-    font=\footnotesize},
-  arrowlabel/.style={fill=white,inner xsep=1.2pt,inner ysep=0.6pt,
-    font=\footnotesize},
+    minimum width=22mm,minimum height=13mm,text width=20mm,
+    align=center,inner sep=2.5pt,outer sep=0pt},
+  info/.style={rounded corners=2pt,minimum width=36mm,minimum height=13mm,
+    text width=34mm,align=center,inner sep=2.5pt,outer sep=0pt},
+  nominalbox/.style={info,draw=blue!60!black,fill=blue!7},
+  actualbox/.style={info,draw=orange!75!black,fill=orange!10},
+  residualbox/.style={info,draw=red!55!black,fill=red!4},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
+    text=blue!65!black},
   mainarrow/.style={->,thick,blue!70!black},
   nominal/.style={->,thick,black},
   actual/.style={->,thick,densely dashed,orange!80!black},
   err/.style={->,thick,red!65!black}
 ]
-  \node[task] (n1) {\textbf{上料百叶车}\\夹取PCBA\\{\scriptsize\texttt{rack\_pick}}};
-  \node[task,right=5mm of n1] (n2) {\textbf{扫码工位}\\扫码登记\\{\scriptsize\texttt{scan}}};
-  \node[task,right=5mm of n2] (n3) {\textbf{检测台}\\取出上一块\\{\scriptsize\texttt{unload\_tester}}};
-  \node[task,right=5mm of n3] (n4) {\textbf{检测台}\\放入当前块\\{\scriptsize\texttt{load\_tester}}};
-  \node[task,right=5mm of n4] (n5) {\textbf{下料百叶车}\\放入上一块\\{\scriptsize\texttt{rack\_place}}};
-  \draw[mainarrow] (n1) -- node[above,arrowlabel]{导航} (n2);
-  \draw[mainarrow] (n2) -- node[above,arrowlabel]{导航} (n3);
-  \draw[mainarrow] (n3) -- node[above,arrowlabel]{原地} (n4);
-  \draw[mainarrow] (n4) -- node[above,arrowlabel]{导航} (n5);
+  \node[task] (n1) {\textbf{上料百叶车}\\夹取PCBA};
+  \node[task,right=8mm of n1] (n2) {\textbf{扫码工位}\\扫码登记};
+  \node[task,right=8mm of n2] (n3) {\textbf{检测台}\\取出上一块};
+  \node[task,right=8mm of n3] (n4) {\textbf{检测台}\\放入当前块};
+  \node[task,right=8mm of n4] (n5) {\textbf{下料百叶车}\\放入上一块};
+  \draw[mainarrow] (n1) -- node[linklabel,above]{导航} (n2);
+  \draw[mainarrow] (n2) -- node[linklabel,above]{导航} (n3);
+  \draw[mainarrow] (n3) -- node[linklabel,above]{原地} (n4);
+  \draw[mainarrow] (n4) -- node[linklabel,above]{导航} (n5);
 
-  % 工位停靠残差示意：以任一工位 k 为例
+  % 工位停靠误差示意：以任一工位 k 为例
   \coordinate (o) at ($(n3.south)+(0,-30mm)$);
   \coordinate (b) at ($(o)+(12mm,-7mm)$);
   \draw[fill=gray!15,draw=gray!60]
@@ -52,10 +55,10 @@
     node[pos=0.5,above,fill=white,inner sep=1pt,
       font=\scriptsize,text=red!65!black]{\(\delta\theta_k^{\mathrm{ref}}\)};
 
-  \node[info,left=20mm of o,yshift=1mm] (nom)
-    {\textbf{名义停靠位姿}\\\({}^{O}\mathbf T_{S_k}\)\\示范采集与任务定义的参考};
-  \node[info,right=20mm of o,yshift=1mm] (act)
-    {\textbf{实际参考位姿}\\\({}^{O}\mathbf T_B^{\mathrm{ref}}\)\\由独立工位测量给出};
-  \node[info,below=4mm of nom] (res)
+  \node[nominalbox,left=18mm of o,yshift=1mm] (nom)
+    {\textbf{名义停靠位姿}\({}^{O}\mathbf T_{S_k}\)\\示范采集参考位姿};
+  \node[actualbox,right=21mm of o,yshift=1mm] (act)
+    {\textbf{实际参考位姿}\({}^{O}\mathbf T_B^{\mathrm{ref}}\)\\独立工位测量给出};
+  \node[residualbox,below=4mm of nom] (res)
     {\textbf{三类停靠记录}\\导航指令\(\boldsymbol\delta_k^{\mathrm{cmd}}\)\\策略输入\(\widehat{\boldsymbol\delta}_k^{\mathrm{loc}}\)\\评价分档\(\boldsymbol\delta_k^{\mathrm{ref}}\)};
 \end{tikzpicture}

@@ -1,61 +1,62 @@
 \begin{tikzpicture}[
   font=\small,
   >={Stealth[length=2.2mm]},
-  data/.style={draw=teal!65!black,rounded corners=2pt,fill=teal!7,
-    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
-  process/.style={draw=blue!65!black,rounded corners=2pt,fill=blue!7,
-    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
-  robot/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
-  decide/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
-    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
-  recover/.style={draw=violet!65!black,rounded corners=2pt,fill=violet!7,
-    minimum height=15mm,text width=30mm,align=center,inner sep=2.5pt},
-  calib/.style={draw=gray!65,rounded corners=5pt,fill=gray!8,
-    text width=30mm,align=center,inner sep=2.5pt,font=\footnotesize},
-  arrow/.style={->,thick,blue!70!black},
-  dataarrow/.style={->,thick,teal!70!black},
+  box/.style={rounded corners=2pt,minimum width=34mm,minimum height=13mm,
+    text width=32mm,align=center,inner sep=2.5pt,outer sep=0pt},
+  process/.style={box,draw=blue!60!black,fill=blue!7},
+  robot/.style={box,draw=orange!75!black,fill=orange!10},
+  decide/.style={box,draw=red!55!black,fill=red!4},
+  offline/.style={box,draw=gray!65,fill=gray!8},
+  mainarrow/.style={->,thick,blue!70!black},
   alarm/.style={->,thick,red!65!black},
   feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
-  influence/.style={->,densely dashed,gray!70,rounded corners=2pt},
-  databus/.style={thick,teal!70!black}
+  influence/.style={->,densely dashed,gray!70!black,rounded corners=2pt},
+  databus/.style={thick,blue!70!black},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
+    text=blue!65!black},
+  errlabel/.style={linklabel,text=red!60!black},
+  vallabel/.style={linklabel,text=orange!80!black},
+  offlabel/.style={linklabel,text=gray!70!black}
 ]
-  \node[data] (prev) {\textbf{前一RTC动作块}\\时间对齐的\\未执行尾部};
-  \node[process,right=6mm of prev] (rtc) {\textbf{RTC连续衔接}\\冻结\(d_i\)步前缀\\引导重叠区并补全};
-  \node[robot,right=6mm of rtc] (exec) {\textbf{执行与观测}\\执行RTC动作块\\获取新观测};
-  \node[data,below=8mm of prev] (raw) {\textbf{当前原始提议}\\新观测+\(\pi_{0.5}\)\\固定参考噪声};
-  \node[process,below=8mm of rtc] (inc) {\textbf{跨块一致性残差}\\归一化\(r_i\)\\滑动均值\(\widetilde r_i\)};
-  \node[decide,below=8mm of exec] (dec) {\textbf{报警判定}\\\(\widetilde r_i>\eta\)\\连续\(n_{\mathrm{hold}}\)次？};
-  \node[recover,below=8mm of dec] (rec) {\textbf{模板恢复}\\停止当前块\\退至\(z_{\mathrm{safe}}\)→回入口位姿};
-  \node[calib,below=8mm of raw] (thr) {\textbf{阈值标定（离线）}\\成功回合的全程最大值\\取95分位};
-  \node[calib,below=8mm of inc] (shadow) {\textbf{离线检测评价}\\回放记录的C2回合\\只记录报警，不改变动作};
-  \node[recover,below=8mm of rec] (retry) {\textbf{重试当前子任务一次}\\成功则继续后序任务\\整链不再允许第二次恢复};
-  \node[decide,below=8mm of retry] (stop) {\textbf{安全停机}\\条件不满足或再次报警\\交人工处理};
+  \node[process] (prev) {\textbf{前一动作序列尾部}\\时间对齐未执行段};
+  \node[process,right=9mm of prev] (rtc) {\textbf{RTC连续衔接}\\冻结前缀与补全};
+  \node[robot,right=9mm of rtc] (exec) {\textbf{执行与观测}\\执行新动作序列获取观测};
+  \node[process,below=9mm of prev] (raw) {\textbf{当前原始提议}\\固定参考噪声推理};
+  \node[process,below=9mm of rtc] (inc) {\textbf{预测偏差量\(r_i\)}\\平滑预测偏差\(\widetilde r_i\)};
+  \node[decide,below=9mm of exec] (dec) {\textbf{报警判定}\\\(\widetilde r_i>\eta\)连续\(n_{\mathrm{hold}}\)次};
+  \node[offline,below=9mm of raw] (shadow) {\textbf{离线检测评价}\\回放C2回合记录};
+  \node[offline,below=9mm of inc] (thr) {\textbf{离线阈值标定}\\成功回合95分位};
+  \node[robot,below=9mm of dec] (rec) {\textbf{模板恢复}\\退至\(z_{\mathrm{safe}}\)再回入口};
+  \node[robot,below=9mm of rec] (retry) {\textbf{重试当前子任务}\\整链仅允许一次};
+  \node[decide,below=9mm of retry] (stop) {\textbf{安全停机}\\交人工处理};
 
-  % 两份时间对齐的动作提议先在节点间的空白带汇入数据总线，
-  % 再分别送往RTC衔接与一致性计算，避免交叉连线穿过文本块。
+  % 两份时间对齐的动作序列经共用总线分别送往RTC衔接与预测偏差计算
   \coordinate (bus-top) at ($(prev.east)!0.5!(rtc.west)$);
   \coordinate (bus-bottom) at ($(raw.east)!0.5!(inc.west)$);
   \draw[databus] (prev.east) -- (bus-top) -- (bus-bottom) -- (raw.east);
-  \draw[dataarrow] (bus-top) -- (rtc.west);
-  \draw[dataarrow] (bus-bottom) -- (inc.west);
-  \draw[arrow] (rtc) -- (exec);
-  \draw[arrow] (inc) -- (dec);
-  % 离线信息只从节点间通道接入，不与在线恢复主链共线。
-  \draw[influence] (thr.north) -- ++(0,4mm) -|
-    node[pos=0.34,above,font=\footnotesize,fill=white,inner sep=1pt]{既定阈值}
-    ($(dec.south west)+(5mm,0)$);
-  \draw[influence] (inc.south) -- (shadow.north);
-  \draw[arrow] (dec.north) -- node[right,font=\footnotesize]{否：继续} (exec.south);
-  \draw[alarm] (dec) -- node[right,font=\footnotesize,fill=white,inner sep=1pt]{C3在线：是} (rec);
-  \draw[arrow] (rec) -- (retry);
-  \draw[alarm] (retry) -- node[right,font=\footnotesize]{不安全/再次报警} (stop);
-  \draw[feedback] (retry.east) -- ++(6mm,0) |-
-    node[pos=0.24,right,font=\footnotesize,align=left,fill=white,inner sep=1pt]{恢复后\\重新推理}
-    (exec.east);
-  \draw[feedback] (exec.north) -- ++(0,6mm) -|
-    node[pos=0.24,above,font=\footnotesize,fill=white,inner sep=1pt]{新观测→下一次\(\pi_{0.5}\)推理}
-    ([xshift=-7mm]raw.west) -- (raw.west);
-  \node[draw=gray!45,densely dashed,rounded corners=3pt,fit=(thr)(shadow),
-    inner sep=2.5mm,label={[font=\footnotesize,text=gray!70]below:离线标定与检测评价}] {};
+  \draw[mainarrow] (bus-top) -- (rtc.west);
+  \draw[mainarrow] (bus-bottom) -- (inc.west);
+  \draw[mainarrow] (rtc) -- (exec);
+  \draw[mainarrow] (inc) -- (dec);
+  \draw[mainarrow] (dec.north) -- node[linklabel,right=1mm]{否：继续} (exec.south);
+  \draw[alarm] (dec) -- node[errlabel,right=1mm]{是：C3恢复} (rec);
+  \draw[mainarrow] (rec) -- (retry);
+  \draw[alarm] (retry) -- node[errlabel,right=1mm]{不安全或再次报警} (stop);
+
+  % 离线分支：平滑预测偏差送离线评价，既定阈值送报警判定，两条走线错开通道
+  \coordinate (gap) at ($(inc.south)!0.5!(thr.north)$);
+  \draw[influence] ([xshift=-8mm]inc.south) -- ([xshift=-8mm]inc.south |- gap) --
+    node[offlabel,above]{平滑预测偏差} (shadow.north |- gap) -- (shadow.north);
+  \draw[influence] ([xshift=8mm]thr.north) -- ([xshift=8mm]thr.north |- gap) --
+    node[offlabel,above]{既定阈值} ([xshift=-6mm]dec.south |- gap) -- ([xshift=-6mm]dec.south);
+
+  % 两条反馈：恢复后重新推理；新观测进入下一次推理
+  \draw[feedback] (retry.east) -- ([xshift=6mm]retry.east) |-
+    node[pos=0.12,vallabel,right,align=left]{恢复后\\重新推理} (exec.east);
+  \draw[feedback] (exec.north) -- ([yshift=6mm]exec.north) -|
+    node[pos=0.25,vallabel,above]{新观测进入下一次\(\pi_{0.5}\)推理}
+    ([xshift=-5mm]raw.west) -- (raw.west);
+
+  \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(shadow)(thr),
+    inner sep=2.5mm,label={[font=\footnotesize,text=gray!70!black]below left:离线标定与检测评价}] {};
 \end{tikzpicture}

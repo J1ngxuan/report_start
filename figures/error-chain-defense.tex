@@ -17,16 +17,16 @@
   linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
     text=blue!65!black}
 ]
-  \node[error] (e1) {工位停靠残差};
+  \node[error] (e1) {工位停靠误差};
   \node[error,right=11mm of e1] (e2) {精细操作阶段显现};
   \node[error,right=11mm of e2] (e3) {错误动作持续};
   \draw[errarrow] (e1.east) -- node[linklabel,text=red!60!black,above]{传递} (e2.west);
   \draw[errarrow] (e2.east) -- node[linklabel,text=red!60!black,above]{放大} (e3.west);
 
-  \node[defense,below=11mm of e1] (d1) {\textbf{停靠残差条件化}\\\textbf{模仿学习方法}};
-  \node[defense,below=11mm of e2] (d2) {\textbf{阶段自适应}\\\textbf{动作块控制方法}};
-  \node[defense,below=11mm of e3] (d3) {\textbf{预测一致性驱动的}\\\textbf{运行时容错方法}};
-  \draw[block] (d1.north) -- node[linklabel,right=1mm]{削减源头残差} (e1.south);
+  \node[defense,below=11mm of e1] (d1) {\textbf{误差补偿}\\\textbf{学习方法}};
+  \node[defense,below=11mm of e2] (d2) {\textbf{分阶段}\\\textbf{执行方法}};
+  \node[defense,below=11mm of e3] (d3) {\textbf{失败检测与}\\\textbf{恢复方法}};
+  \draw[block] (d1.north) -- node[linklabel,right=1mm]{削减源头误差} (e1.south);
   \draw[block] (d2.north) -- node[linklabel,right=1mm]{缩短开环区间} (e2.south);
   \draw[block] (d3.north) -- node[linklabel,right=1mm]{截断失败执行} (e3.south);
 
@@ -35,9 +35,9 @@
   \draw[depend] (d2.south) to[out=-90,in=-90,looseness=0.7]
     node[linklabel,below]{密集重叠预测作为失败信号} (d3.south);
   \draw[depend] ([xshift=-6mm]d1.south) to[out=-90,in=-90,looseness=0.55]
-    node[linklabel,below]{残差注入提供可控失败样本} ([xshift=6mm]d3.south);
+    node[linklabel,below]{误差注入提供可控失败样本} ([xshift=6mm]d3.south);
 
-  \node[validate,below=26mm of d2] (val) {逐层叠加验证：C0基线 \(\rightarrow\) C1 \(\rightarrow\) C2 \(\rightarrow\) C3，相同残差注入协议与五子任务链};
+  \node[validate,below=26mm of d2] (val) {逐层叠加验证：C0基线 \(\rightarrow\) C1误差补偿 \(\rightarrow\) C2分阶段执行 \(\rightarrow\) C3检测与恢复\\相同误差注入协议与五子任务链};
   \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e2)(e3),inner sep=2.5mm,
     label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
 \end{tikzpicture}

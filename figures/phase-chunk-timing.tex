@@ -15,7 +15,7 @@
   \node[note,anchor=south west,text=gray!60!black] at (0.3,3.65)
     {自由空间阶段\(\phi_t=\mathrm{free}\)：\\预测时域\(H\)，采用较长执行时域\(s_{\mathrm{free}}\)};
   \node[note,anchor=south west,text=red!60!black] at (5.45,3.65)
-    {精细操作阶段\(\phi_t=\mathrm{fine}\)：每隔\(s_{\mathrm{fine}}\)步启动推理，\\旧块尾部（浅色）引导RTC生成新块};
+    {精细操作阶段\(\phi_t=\mathrm{fine}\)：每隔\(s_{\mathrm{fine}}\)步启动推理，\\前一动作序列尾部（浅色）引导RTC生成新动作序列};
   % 时间轴
   \draw[->,thick] (0,0) -- (12.8,0) node[below left,font=\footnotesize]{\(t\)};
   \foreach \x in {0.4,1.1,...,12.3} \draw (\x,0.06) -- (\x,-0.06);
@@ -23,7 +23,7 @@
   \draw[pend] (0.4,0.5) rectangle (5.6,0.85);
   \draw[exec] (0.4,0.5) rectangle (5.3,0.85);
   \draw[infer] (0.4,-0.45) -- (0.4,-0.05);
-  % 精细操作阶段：错位重叠的动作块，示意 s_fine < H
+  % 精细操作阶段：错位重叠的动作序列，示意 s_fine < H
   \foreach \s/\y in {5.3/0.5,6.0/1.0,6.7/1.5,7.4/2.0,8.1/2.5,8.8/3.0} {
     \draw[pend] (\s,\y) rectangle (\s+2.8,\y+0.35);
     \draw[exec] (\s,\y) rectangle (\s+0.7,\y+0.35);
@@ -37,5 +37,5 @@
   \draw[densely dashed,gray!60!black] (8.1,-0.5) -- (8.1,3.45);
   \node[note,anchor=north] at (8.1,-0.55) {推理启动\(t_i\)};
   \node[note,anchor=north,text width=53mm] at (2.8,-0.55) {橙色箭头：\(t_{i+1}=t_i+s_{\phi_{t_i}}\)；深色为当前执行区间};
-  \node[note,anchor=north,text width=38mm] at (10.7,-0.55) {RTC在推理期间继续执行旧块，返回后切换到连续的新动作块};
+  \node[note,anchor=north,text width=38mm] at (10.7,-0.55) {RTC在推理期间继续执行前一动作序列，返回后切换到连续的新动作序列};
 \end{tikzpicture}

@@ -1,47 +1,58 @@
 \begin{tikzpicture}[
   font=\small,
   >={Stealth[length=2.2mm]},
+  error/.style={draw=red!55!black,rounded corners=2pt,fill=red!4,
+    minimum width=32mm,minimum height=11mm,text width=30mm,
+    align=center,inner sep=2.5pt,outer sep=0pt},
   flow/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
-    minimum width=25mm,minimum height=19mm,text width=21mm,
-    align=center,inner sep=2pt,outer sep=0pt},
-  plant/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum width=29mm,minimum height=16mm,text width=25mm,
-    align=center,inner sep=2pt,outer sep=0pt},
-  errnode/.style={draw=red!55!black,rounded corners=5pt,fill=red!4,
-    minimum width=27mm,minimum height=20mm,text width=23mm,
-    align=center,inner sep=2pt,outer sep=0pt,font=\footnotesize},
-  edgelabel/.style={fill=white,inner xsep=1.5pt,inner ysep=0.8pt,
-    font=\footnotesize},
+    minimum width=26mm,minimum height=13mm,text width=24mm,
+    align=center,inner sep=2.5pt,outer sep=0pt},
+  plant/.style={flow,draw=orange!75!black,fill=orange!10},
+  errarrow/.style={->,thick,red!65!black},
   mainarrow/.style={->,thick,blue!70!black},
   feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
-  influence/.style={->,densely dashed,red!60!black}
+  influence/.style={->,densely dashed,red!60!black},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
+    text=blue!65!black},
+  errlabel/.style={linklabel,text=red!60!black}
 ]
-  \node[flow] (nav) {\textbf{激光雷达导航}\\定位与\\工位间移动};
-  \node[flow,right=3mm of nav] (park) {\textbf{工位停靠}\\到位后\\锁定底盘};
-  \node[flow,right=3mm of park] (sense) {\textbf{多视角感知}\\头部·腕部相机\\本体状态};
-  \node[flow,right=3mm of sense] (policy) {\textbf{\(\pi_{0.5}\)策略}\\推理输出\\动作块};
-  \node[flow,right=3mm of policy] (exec) {\textbf{双臂执行}\\夹取·扫码\\插槽·放置};
-  \node[plant,below=10mm of exec] (plant) {\textbf{工位与物料}\\百叶车槽位·扫码枪\\检测台·PCBA};
-
+  % 底行：策略闭环
+  \node[flow] (nav) {\textbf{激光雷达导航}\\工位间移动};
+  \node[flow,right=3mm of nav] (park) {\textbf{工位停靠}\\锁定底盘};
+  \node[flow,right=3mm of park] (sense) {\textbf{多视角感知}\\图像与状态};
+  \node[flow,right=3mm of sense] (policy) {\textbf{\(\pi_{0.5}\)策略推理}\\输出动作序列};
+  \node[flow,right=3mm of policy] (exec) {\textbf{双臂执行}\\夹取与放置};
+  \node[plant,below=10mm of exec] (plant) {\textbf{工位与物料}\\百叶车等设备};
   \draw[mainarrow] (nav) -- (park);
   \draw[mainarrow] (park) -- (sense);
-  \draw[mainarrow] (sense) -- node[edgelabel,above]{观测} (policy);
-  \draw[mainarrow] (policy) -- node[edgelabel,above]{动作} (exec);
+  \draw[mainarrow] (sense) -- (policy);
+  \draw[mainarrow] (policy) -- (exec);
   \draw[mainarrow] (exec) -- (plant);
   \draw[feedback] (plant.west) --
-    node[edgelabel,below]{接触结果与场景变化反馈}
+    node[linklabel,text=orange!80!black,below]{块间反馈新观测}
     (sense.south |- plant.west) -- (sense.south);
 
-  \node[errnode,above=9mm of park] (err1) {\textbf{工位停靠残差}\\厘米量级平移\\度量级航向};
-  \node[errnode,above=9mm of policy] (err2) {\textbf{策略级开环}\\块内不接收新观测\\错误动作可能持续};
-  \node[errnode,above=9mm of exec] (err3) {\textbf{精细操作阶段显现}\\插槽·放置\\失败或损坏};
-  \draw[influence] (err1.east) -- (err2.west);
-  \draw[influence] (err2.east) -- (err3.west);
-  \draw[influence] (err1.south) -- (park.north);
-  \draw[influence] (err2.south) -- (policy.north);
-  \draw[influence] (err3.south) -- (exec.north);
-  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(err1)(err2)(err3),
+  % 顶行：误差传递链，顺序与总体技术路线图一致
+  \node[error,above=15mm of sense] (e2) {精细操作阶段显现};
+  \node[error,left=11mm of e2] (e1) {工位停靠误差};
+  \node[error,right=11mm of e2] (e3) {错误动作持续};
+  \draw[errarrow] (e1.east) -- node[errlabel,above]{传递} (e2.west);
+  \draw[errarrow] (e2.east) -- node[errlabel,above]{放大} (e3.west);
+
+  % 链上环节与闭环环节的对应
+  \coordinate (mid) at ([yshift=-11mm]e2.south);
+  \coordinate (mid2) at ([yshift=-7mm]e3.south);
+  \draw[influence] ([xshift=7mm]e1.south) --
+    node[errlabel,right=1mm]{停靠后产生} ([xshift=-7mm]park.north);
+  \draw[influence] (e2.south) -- (e2.south |- mid) --
+    node[errlabel,above]{与装配公差同量级}
+    ([xshift=-9mm]exec.north |- mid) -- ([xshift=-9mm]exec.north);
+  \draw[influence] (e3.south) -- (e3.south |- mid2) --
+    node[errlabel,above]{块内无反馈}
+    ([xshift=3mm]exec.north |- mid2) -- ([xshift=3mm]exec.north);
+
+  \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e2)(e3),
     inner sep=2.5mm,label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
   \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(nav)(exec)(plant),
-    inner sep=3mm,label={[font=\footnotesize,text=gray!70!black]below left:块间视觉闭环}] {};
+    inner sep=2.5mm,label={[font=\footnotesize,text=gray!70!black]below left:块间视觉闭环}] {};
 \end{tikzpicture}
