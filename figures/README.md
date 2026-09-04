@@ -35,3 +35,8 @@
 - `mfg-amr.jpg`：Rlistmedia，“Autonomous Mobile Robot AMR”，CC BY 4.0，Wikimedia Commons：<https://commons.wikimedia.org/wiki/File:Autonomous_Mobile_Robot_AMR.png>。
 - `mfg-quality.jpg`：National Institute of Standards and Technology，“Real-time Quality Control for Welding”，条目标记为美国政府作品，摄影署名 Geoffrey Wheeler Photography，Wikimedia Commons：<https://commons.wikimedia.org/wiki/File:Real-time_Quality_Control_for_Welding_(5884928619).jpg>。正文图注已明确指向 NIST 的焊接质量监测工作，不作通用素材使用。
 - `mfg-collab.jpg`：Jeff Green / Rethink Robotics，“Schramberg - Sawyer 3”，CC BY 4.0，Wikimedia Commons：<https://commons.wikimedia.org/wiki/File:Schramberg_-_Sawyer_3.jpg>。
+
+## 工业具身机器人案例组图来源
+
+- `agibot-longcheer/g2-station-operation.jpg`：智元精灵G2在龙旗科技南昌平板制造工厂检测工位作业。原图见 IT之家 2026-04-15 报道《全球首个具身智能工业产线规模落地：智元精灵 G2 连续 8 小时作业零失误》（新浪科技同日转载）：<https://www.ithome.com/0/939/194.htm>。为统一组图版式，以机器人和检测工位为中心等比例裁切并缩放为 1200×750 像素，未作内容性增删。
+- `agibot-longcheer/g2-production-line.jpg`：智元精灵G2在龙旗科技工厂多机并线作业。原图见上海证券报 2026-06-30 报道《智元第15000台机器人交付至龙旗产线 机器人“工友”交出怎样的答卷？》：<https://paper.cnstock.com/html/2026-06/30/content_2237360.htm>。为统一组图版式，以产线中的机器人为中心等比例裁切并缩放为 1200×750 像素，未作内容性增删。

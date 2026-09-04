@@ -26,3 +26,5 @@
 *.toe
 *.xdv
 /reference_papers/
+/report.pdf
+/tmp/

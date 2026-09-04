@@ -519,6 +519,15 @@ FUNCTION {set.mark} {                             % void Entry::set_mark(String 
                                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                   %
+FUNCTION {set.print.mark} {                       % void Entry::set_print_mark(String mark) {
+  'mark :=                                        %   this.mark = mark;
+  media empty$ not {                              %   if (! empty(this.media)) {
+    mark "/" * media * 'mark :=                  %     this.mark = this.mark + "/" + this.media;
+  } 'skip$ if$                                    %   }
+}                                                 % }
+                                                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                  %
 FUNCTION {cap.volume} {                           % String Entry::cap_volume() {
   is.in.chinese {                                 %   if (is_in_chinese()) {
     cap.volume.zh                                 %     return cap_volume_zh;
@@ -1433,7 +1442,7 @@ FUNCTION {collection} {                           % void Entry::collection() {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                   %
 FUNCTION {proceedings} {                          % void Entry::proceedings() {
-  "C" set.mark                                    %   set_mark("C");
+  "C" set.print.mark                              %   set_print_mark("C");
   start.bibitem                                   %   start_bibitem();
   true output.editor                              %   output_editor(true);
   true output.series.volume.title                 %   output_series_volume_title(true);
@@ -1623,7 +1632,7 @@ FUNCTION {periodical.impl} {                      % void Entry::periodical_impl(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                   %
 FUNCTION {periodical} {                           % void Entry::periodical() {
-  "J" set.mark                                    %   set_mark("J");
+  "J" set.print.mark                              %   set_print_mark("J");
   periodical.impl                                 %   periodical_impl();
 }                                                 % }
                                                   %
@@ -1782,14 +1791,14 @@ FUNCTION {incollection} {                         % void Entry::incollection() {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                   %
 FUNCTION {inproceedings} {                        % void Entry::inproceedings() {
-  "C" set.mark                                    %   set_mark("C");
+  "C" set.print.mark                              %   set_print_mark("C");
   inbook.impl                                     %   inbook_impl();
 }                                                 % }
                                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                   %
 FUNCTION {article} {                              % void Entry::article() {
-  "J" set.mark                                    %   set_mark("J");
+  "J" set.print.mark                              %   set_print_mark("J");
   start.bibitem                                   %   start_bibitem();
   true output.author                              %   output_author(true);
   true output.title                               %   output_title(true);
@@ -1955,4 +1964,3 @@ EXECUTE {end.bib}                                 %   end_bib();
                                                   % }
                                                   %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
