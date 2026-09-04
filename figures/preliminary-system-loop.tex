@@ -24,7 +24,7 @@
 
   \node[process,below=12mm of robot] (record) {\textbf{同步记录}\\图像·状态·动作};
   \node[process,below=12mm of controller] (dataset) {\textbf{示范数据集}\\回合与语言指令};
-  \node[train,below=12mm of mapping] (pi) {\textbf{OpenPI微调}\\\(\pi_{0.5}\)动作头适配};
+  \node[train,below=12mm of mapping] (pi) {\textbf{OpenPI微调}\\\(\pi_{0.5}\)动作预测头适配};
   \node[process,below=12mm of vr] (online) {\textbf{OpenPI推理}\\输出连续动作序列};
   \node[process,below=8mm of pi] (state) {\textbf{任务状态机}\\低层语言指令};
   \draw[mainarrow] (robot) -- node[onlinelabel,right=1mm]{同步} (record);

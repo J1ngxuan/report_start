@@ -17,8 +17,8 @@
   errlabel/.style={linklabel,text=red!60!black},
   vallabel/.style={linklabel,text=orange!80!black}
 ]
-  \node[stage] (pipeline) {\textbf{已贯通\(\pi_{0.5}\)}\\\textbf{接口链路}\\单回合已验证};
-  \node[stage,right=9mm of pipeline] (observe) {\textbf{真机失败观察}\\精细阶段失败};
+  \node[stage] (pipeline) {\textbf{已完成\(\pi_{0.5}\)}\\\textbf{接口集成}\\单回合已验证};
+  \node[stage,right=9mm of pipeline] (observe) {\textbf{实体机器人失败观测}\\精细阶段失败};
   \node[stage,right=9mm of observe] (chain) {\textbf{工位停靠误差}\\\textbf{传递链}\\三环节依次传递};
   \node[stage,right=9mm of chain] (defense) {\textbf{误差补偿学习}\\\textbf{分阶段执行}\\\textbf{失败检测与恢复}};
   \draw[mainarrow] (pipeline.east) -- node[linklabel,above]{部署} (observe.west);
@@ -36,6 +36,6 @@
   \draw[toval] (metric.north) -- node[vallabel,right=1mm]{评价指标} (defense.south);
 
   \draw[feedback] (metric.south) -- ([yshift=-6mm]metric.south) --
-    node[vallabel,above]{验证结果反馈数采规范与部署配置}
+    node[vallabel,above]{根据验证结果修订示范采集规范与部署配置}
     ([yshift=-6mm]dataissue.south) -- (dataissue.south);
 \end{tikzpicture}

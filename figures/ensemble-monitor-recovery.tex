@@ -23,11 +23,11 @@
   \node[robot,right=9mm of rtc] (exec) {\textbf{执行与观测}\\执行新动作序列获取观测};
   \node[process,below=9mm of prev] (raw) {\textbf{当前原始提议}\\固定参考噪声推理};
   \node[process,below=9mm of rtc] (inc) {\textbf{预测偏差量\(r_i\)}\\平滑预测偏差\(\widetilde r_i\)};
-  \node[decide,below=9mm of exec] (dec) {\textbf{报警判定}\\\(\widetilde r_i>\eta\)连续\(n_{\mathrm{hold}}\)次};
+  \node[decide,below=9mm of exec] (dec) {\textbf{告警判定}\\\(\widetilde r_i>\eta\)连续\(n_{\mathrm{hold}}\)次};
   \node[offline,below=9mm of raw] (shadow) {\textbf{离线检测评价}\\回放C2回合记录};
   \node[offline,below=9mm of inc] (thr) {\textbf{离线阈值标定}\\成功回合95分位};
   \node[robot,below=9mm of dec] (rec) {\textbf{模板恢复}\\退至\(z_{\mathrm{safe}}\)再回入口};
-  \node[robot,below=9mm of rec] (retry) {\textbf{重试当前子任务}\\整链仅允许一次};
+  \node[robot,below=9mm of rec] (retry) {\textbf{重试当前子任务}\\完整任务链仅允许一次};
   \node[decide,below=9mm of retry] (stop) {\textbf{安全停机}\\交人工处理};
 
   % 两份时间对齐的动作序列经共用总线分别送往RTC衔接与预测偏差计算
@@ -41,9 +41,9 @@
   \draw[mainarrow] (dec.north) -- node[linklabel,right=1mm]{否：继续} (exec.south);
   \draw[alarm] (dec) -- node[errlabel,right=1mm]{是：C3恢复} (rec);
   \draw[mainarrow] (rec) -- (retry);
-  \draw[alarm] (retry) -- node[errlabel,right=1mm]{不安全或再次报警} (stop);
+  \draw[alarm] (retry) -- node[errlabel,right=1mm]{不安全或再次告警} (stop);
 
-  % 离线分支：平滑预测偏差送离线评价，既定阈值送报警判定，两条走线错开通道
+  % 离线分支：平滑预测偏差送入离线评价，已标定阈值送入告警判定，两条路径使用错开的通道
   \coordinate (gap) at ($(inc.south)!0.5!(thr.north)$);
   \draw[influence] ([xshift=-8mm]inc.south) -- ([xshift=-8mm]inc.south |- gap) --
     node[offlabel,above]{平滑预测偏差} (shadow.north |- gap) -- (shadow.north);
