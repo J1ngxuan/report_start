@@ -85,6 +85,11 @@
     \int_gdecr:N \g_bib_maxauthor_int
   }
 }
+
+\str_new:N \g_bib_labelalign_str
+\define@key{hit}{biblabelalign}{%
+  \str_set:Nn \g_bib_labelalign_str {#1}
+}
 \ExplSyntaxOff
 
 \DeclareBoolOption[true]{raggedbottom}
@@ -665,14 +670,17 @@
 \DeclareRobustCommand\inlinecite{\@inlinecite}
 \def\@inlinecite#1{\begingroup\citestyle{inline}\let\@cite\NAT@citenum\citep{#1}\endgroup}
 \let\onlinecite\inlinecite
+\ExplSyntaxOn
 \renewenvironment{thebibliography}[1]{%
   \ifboolexpr{ bool {hit@shenzhen} and bool {hit@master} and bool {hit@opening} }%
   {%
     \section*{参考文献}
     \addcontentsline{toc}{section}{参考文献}
   }{}
-  \list{\@biblabel{\@arabic\c@enumiv}}%
-  {\renewcommand{\makelabel}[1]{##1\hfill}
+  \list{\@biblabel{\@arabic\c@enumiv}}{%
+    \str_if_eq:VnT \g_bib_labelalign_str {left} {
+      \RenewDocumentCommand\makelabel{m}{##1\hfill}
+    }
     \settowidth{\labelwidth}{\@biblabel{#1}}
     \setlength{\labelsep}{0.5em}
     \setlength{\itemindent}{0pt}
@@ -692,9 +700,8 @@
 {\def\@noitemerr
   {\@latex@warning{Empty `thebibliography' environment}}%
 \endlist\frenchspacing}
-\ExplSyntaxOn
 %% 用以控制参考文献列表中单个作者的格式
-\exp_args:NNe \cs_new:Nn \g_bib_author_func:n {
+\exp_args:NNe \cs_new:Nn \g_bib_author_cs:n {
     \bool_if:NTF \g_bib_authorupper_bool {
         \exp_not:N \text_uppercase:n {#1}
     } {
@@ -712,7 +719,7 @@
       \prg_break:n {\tl_head:N {#1}}
     }
     \int_incr:N \l_tmpa_int
-    \g_bib_author_func:n {##1}
+    \g_bib_author_cs:n {##1}
   }
   \prg_break_point:
 }

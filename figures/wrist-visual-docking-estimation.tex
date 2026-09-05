@@ -1,0 +1,152 @@
+% 自绘概念示意；图中观测与偏差均非实测数据。
+\begin{tikzpicture}[
+  x=.96cm,y=1cm,font=\fontsize{9}{11}\selectfont,
+  >={Stealth[length=2mm]},
+  line cap=round,line join=round,
+  txt/.style={align=center,inner sep=1pt},
+  note/.style={txt,font=\fontsize{8.5}{11}\selectfont,text=black!70},
+  ref/.style={draw=blue!65!black,densely dashed,line width=1pt},
+  cur/.style={draw=orange!85!black,line width=1.1pt},
+  flow/.style={->,draw=black!60,line width=.8pt}
+]
+  % 三个面板在同一阅读方向上排列。
+  \path[use as bounding box] (0,0) rectangle (15.4,8.8);
+  \foreach \xa/\xb in {0/4.65,4.95/10.05,10.35/15.4} {
+    \filldraw[fill=black!1,draw=black!20,rounded corners=3pt]
+      (\xa,.08) rectangle (\xb,8.72);
+  }
+  \node[txt,font=\fontsize{10}{12}\selectfont\bfseries] at (2.325,8.32) {(a) 固定观察位姿};
+  \node[txt,font=\fontsize{10}{12}\selectfont\bfseries] at (7.5,8.32) {(b) 工装局部观测对比};
+  \node[txt,font=\fontsize{10}{12}\selectfont\bfseries] at (12.875,8.32) {(c) 平面停靠偏差};
+
+  % (a) 侧视示意：底盘、腰部、机械臂及腕部相机。
+  \draw[black!35] (.35,4.6) -- (4.3,4.6);
+  \filldraw[fill=blue!8,draw=blue!45!black,rounded corners=2pt]
+    (.5,4.83) rectangle (1.8,5.28);
+  \foreach \x in {.76,1.53} {
+    \fill[black!55] (\x,4.78) circle (.16);
+  }
+  \filldraw[fill=blue!10,draw=blue!45!black]
+    (.98,5.28) rectangle (1.3,6.25);
+  \draw[black!30,line width=6pt] (1.14,6.12) -- (.8,6.82) -- (1.68,7.05) -- (2.2,6.64);
+  \draw[blue!50!black,line width=1pt] (1.14,6.12) -- (.8,6.82) -- (1.68,7.05) -- (2.2,6.64);
+  \foreach \p in {(1.14,6.12),(.8,6.82),(1.68,7.05)} {
+    \filldraw[fill=white,draw=blue!50!black] \p circle (.10);
+  }
+  \fill[blue!9] (2.28,6.63) -- (4.02,5.74) -- (3.24,5.44) -- cycle;
+  \draw[blue!45,densely dashed] (2.28,6.63) -- (4.02,5.74);
+  \draw[blue!45,densely dashed] (2.28,6.63) -- (3.24,5.44);
+  \filldraw[fill=blue!60!black,draw=blue!65!black,rotate around={-25:(2.22,6.64)}]
+    (2.03,6.53) rectangle (2.42,6.75);
+  \node[note] at (3.05,7.30) {腕部相机\\彩色与深度};
+  \draw[black!50] (2.80,6.97) -- (2.38,6.76);
+  \node[note] at (.83,7.58) {机械臂};
+  \filldraw[fill=black!8,draw=black!50] (3.13,5.42) rectangle (4.12,5.72);
+  \draw[black!50,line width=2pt] (3.28,5.42) -- (3.28,4.63);
+  \draw[black!50,line width=2pt] (3.98,5.42) -- (3.98,4.63);
+  \draw[orange!85!black,line width=1.5pt] (3.13,5.72) -- (4.12,5.72);
+  \draw[orange!85!black,line width=1.5pt] (3.34,5.72) -- (3.34,5.93) -- (3.60,5.93);
+  \node[note] at (3.65,5.02) {检测台};
+  \node[note] at (2.325,4.20) {底盘锁定，腰部姿态一致};
+
+  % 两类工装特征分别示例，避免画成同一物理工位。
+  \node[txt,font=\footnotesize\bfseries] at (2.325,3.64) {可利用的固定几何特征};
+  \draw[black!50] (.40,2.26) -- (1.85,2.26) -- (2.12,2.91) -- (.67,2.91) -- cycle;
+  \draw[cur] (.40,2.26) -- (1.85,2.26) -- (2.12,2.91);
+  \draw[cur] (.81,2.48) -- (.81,2.77) -- (1.1,2.77);
+  \draw[cur] (1.54,2.41) -- (1.78,2.41) -- (1.78,2.69);
+  \node[note] at (1.27,1.78) {检测台边框\\定位结构};
+  \draw[black!45] (2.93,2.19) rectangle (4.05,3.1);
+  \foreach \y in {2.35,2.55,2.75,2.95} {
+    \draw[black!40] (2.93,\y) -- (4.05,\y);
+  }
+  \draw[cur] (2.93,2.19) -- (2.93,3.1);
+  \draw[cur] (4.05,2.19) -- (4.05,3.1);
+  \node[note] at (3.49,1.89) {百叶车立柱};
+  \node[note,text width=4.1cm] at (2.325,.90)
+    {相机相对基座的观察位姿固定\\在各工位分别建立参考观测};
+
+  % (b) 两次观测；彩色图突出轮廓，深度图突出局部空间结构。
+  \node[txt,text=blue!65!black] at (7.5,7.73) {标称停靠：工位参考观测};
+  \node[txt,text=orange!85!black] at (7.5,4.81) {当前停靠：作业前观测};
+  \foreach \y in {5.83,2.91} {
+    \filldraw[fill=white,draw=black!25,rounded corners=1pt]
+      (5.30,\y) rectangle (7.30,\y+1.48);
+    \filldraw[fill=blue!7,draw=black!25,rounded corners=1pt]
+      (7.68,\y) rectangle (9.68,\y+1.48);
+  }
+  \node[note] at (6.30,5.59) {彩色};
+  \node[note] at (8.68,5.59) {深度};
+  \node[note] at (6.30,2.67) {彩色};
+  \node[note] at (8.68,2.67) {深度};
+  % 参考视图。
+  \fill[black!7] (5.57,6.10) -- (6.88,6.10) -- (7.04,7.05) -- (5.73,7.05) -- cycle;
+  \draw[ref] (5.57,6.10) -- (6.88,6.10) -- (7.04,7.05) -- (5.73,7.05) -- cycle;
+  \draw[ref] (5.90,6.42) -- (5.90,6.78) -- (6.24,6.78);
+  \draw[ref] (6.46,6.32) -- (6.71,6.32) -- (6.71,6.66);
+  \foreach \i in {0,...,7} {
+    \pgfmathsetmacro{\yy}{6.10+\i*.118}
+    \pgfmathsetmacro{\xx}{7.95+\i*.020}
+    \pgfmathtruncatemacro{\shade}{30+\i*5}
+    \fill[blue!\shade!cyan] (\xx,\yy) rectangle (\xx+1.31,\yy+.12);
+  }
+  \draw[white,line width=1.5pt] (8.22,6.42) -- (8.22,6.78) -- (8.56,6.78);
+  \draw[white,line width=1.5pt] (8.78,6.32) -- (9.03,6.32) -- (9.03,6.66);
+  % 当前视图中同一固定结构的投影和深度分布发生变化。
+  \fill[orange!8] (5.51,3.30) -- (6.82,3.10) -- (7.09,4.02) -- (5.80,4.23) -- cycle;
+  \draw[cur] (5.51,3.30) -- (6.82,3.10) -- (7.09,4.02) -- (5.80,4.23) -- cycle;
+  \draw[cur] (5.91,3.59) -- (5.97,3.96) -- (6.30,3.90);
+  \draw[cur] (6.42,3.39) -- (6.68,3.35) -- (6.74,3.70);
+  \begin{scope}
+    \clip (7.89,3.30) -- (9.20,3.10) -- (9.47,4.02) -- (8.18,4.23) -- cycle;
+    \foreach \i in {0,...,9} {
+      \pgfmathsetmacro{\yy}{3.08+\i*.118}
+      \pgfmathtruncatemacro{\shade}{24+\i*5}
+      \fill[blue!\shade!cyan] (7.82,\yy) rectangle (9.55,\yy+.12);
+    }
+  \end{scope}
+  \draw[white,line width=1.5pt] (8.29,3.59) -- (8.35,3.96) -- (8.68,3.90);
+  \draw[white,line width=1.5pt] (8.80,3.39) -- (9.06,3.35) -- (9.12,3.70);
+  \draw[black!45,densely dashed] (7.5,5.47) -- (7.5,5.03);
+  \node[note,fill=black!1] at (7.5,2.19) {同一固定结构的轮廓与深度变化};
+  \node[txt,draw=blue!40!black,fill=blue!5,rounded corners=2pt,
+    text width=4.25cm,minimum height=1.05cm,font=\fontsize{8.5}{11}\selectfont] (compare) at (7.5,1.15)
+    {比较固定特征的观测变化\\结合深度与相机相对基座位姿};
+  \draw[flow] (7.5,1.96) -- (compare.north);
+  \draw[flow] (4.65,6.36) -- (5.22,6.36);
+
+  % (c) 俯视示意。S_k 为标称基座系；橙色为当前基座系。
+  \node[note] at (12.875,7.72) {俯视：工装固定，基座位姿变化};
+  \filldraw[draw=black!50,fill=black!8] (11.18,6.81) rectangle (14.74,7.20);
+  \node[note] at (12.96,7.00) {固定工装};
+  \coordinate (nominal) at (11.70,4.26);
+  \coordinate (actual) at (13.23,5.14);
+  \draw[ref,rounded corners=2pt] (11.14,3.88) rectangle (12.26,4.64);
+  \draw[cur,fill=orange!5,rotate around={22:(13.23,5.14)},rounded corners=2pt]
+    (12.67,4.76) rectangle (13.79,5.52);
+  \draw[->,blue!65!black] (nominal) -- (12.72,4.26) node[below,font=\footnotesize] {$x_{S_k}$};
+  \draw[->,blue!65!black] (nominal) -- (11.70,5.49) node[above,font=\footnotesize] {$y_{S_k}$};
+  \draw[->,orange!85!black] (actual) -- ++(22:1.13) node[right,font=\footnotesize] {$x_B$};
+  \draw[->,orange!85!black] (actual) -- ++(112:.90) node[left,font=\footnotesize] {$y_B$};
+  \fill[blue!65!black] (nominal) circle (.035);
+  \fill[orange!85!black] (actual) circle (.035);
+  \node[note,text=blue!65!black,anchor=north] at (11.68,3.78) {标称停靠 $\{S_k\}$};
+  \node[note,text=orange!85!black,anchor=south] at (13.40,6.25) {当前停靠 $\{B\}$};
+  \draw[black!45,densely dotted] (nominal) -- (13.23,4.26) -- (actual);
+  \draw[<->,black!70] (11.70,3.09) -- node[fill=black!1,inner sep=1pt] {$\delta x_k$} (13.23,3.09);
+  \draw[black!30,densely dotted] (11.70,3.01) -- (11.70,3.41);
+  \draw[black!30,densely dotted] (13.23,3.01) -- (13.23,4.26);
+  \draw[<->,black!70] (14.73,4.26) -- node[right,inner sep=2pt] {$\delta y_k$} (14.73,5.14);
+  \draw[black!30,densely dotted] (13.23,4.26) -- (14.83,4.26);
+  \draw[black!30,densely dotted] (actual) -- (14.83,5.14);
+  \draw[black!40,densely dotted] (actual) -- ++(1.1,0);
+  \draw[->,orange!85!black] (14.02,5.14) arc[start angle=0,end angle=22,radius=.79];
+  \node[txt,text=orange!85!black,font=\footnotesize] at (14.50,5.97) {$\delta\theta_k$};
+  \draw[orange!65!black] (14.38,5.84) -- (14.02,5.40);
+  \node[txt,draw=orange!75!black,fill=orange!6,rounded corners=2pt,
+    text width=4.27cm,minimum height=1.1cm,font=\fontsize{8.5}{11}\selectfont] (estimate) at (12.875,1.15)
+    {估计输出：$\widehat{\boldsymbol\delta}_k^{\mathrm{vis}}$\\
+     平移分量与航向分量\\统一表示在标称停靠坐标系中};
+  \draw[flow] (compare.east) -- (estimate.west);
+  \node[note,text width=4.4cm] at (12.875,2.43) {作业前估计\\底盘保持当前停靠位姿};
+\end{tikzpicture}

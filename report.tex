@@ -2,12 +2,21 @@
 % 默认配置：哈尔滨校区硕士开题报告。
 % 可选学位类型：type=doctor|master|bachelor
 % 可选校区：campus=harbin|shenzhen|weihai
-\documentclass[fontset=fandol,toc=true,type=master,stage=opening,campus=harbin]{hithesisart}
+\documentclass[toc=true,type=master,stage=opening,campus=harbin]{hithesisart}
 
-\usepackage{needspace}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,calc}
 \graphicspath{{figures/}}
+
+% 兼容 footmisc 6：切换为模板的页底对齐时，清除上一页缓存的页底胶。
+% 保留 \flushbottom 的默认排版行为，避免旧缓存触发分页拆箱错误。
+\makeatletter
+\ifdefined\@outputbox@reinsertbskip
+  \AddToHook{cmd/flushbottom/after}{%
+    \global\let\@outputbox@reinsertbskip\relax
+  }
+\fi
+\makeatother
 
 % 四级标题（“项”）按学校规范排版：题序前空4个半角字符，
 % 采用全角括号编号，标题后的阐述内容空4个半角字符接排。

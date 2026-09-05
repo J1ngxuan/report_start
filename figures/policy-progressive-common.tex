@@ -1,0 +1,154 @@
+% 保留原结构图的数据流、训练关系及执行控制关系，仅调整节点与走线。
+% policystage 决定当前方法包含的模块，policyfocus 决定派生图的强调部分。
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2mm]},
+  box/.style={rounded corners=2pt,align=center,inner sep=2pt,outer sep=0pt},
+  data/.style={box,draw=black!60,fill=white,minimum width=28mm,text width=26mm,minimum height=10mm},
+  process/.style={box,draw=blue!60!black,fill=blue!6},
+  retained/.style={box,draw=blue!55!black,fill=blue!4},
+  offline/.style={box,draw=gray!65,fill=gray!7},
+  added/.style={draw=orange!85!black,fill=orange!10,line width=1pt},
+  container/.style={draw=blue!50!black,densely dashed,rounded corners=3pt,inner sep=2mm},
+  mainarrow/.style={->,thick,blue!65!black},
+  monitor/.style={->,thick,blue!65!black,rounded corners=2pt},
+  feedback/.style={->,thick,blue!65!black,rounded corners=3pt},
+  influence/.style={->,densely dashed,gray!70!black},
+  linklabel/.style={font=\footnotesize,align=center,fill=white,inner sep=1pt,text=blue!65!black}
+]
+  \tikzset{first/.style={},second/.style={},third/.style={}}
+  \ifnum\policyfocus=1
+    \tikzset{first/.style={added}}
+  \fi
+  \ifnum\policyfocus=2
+    \tikzset{second/.style={added}}
+  \fi
+  \ifnum\policyfocus=3
+    \tikzset{third/.style={added}}
+  \fi
+
+  \ifnum\policystage=1
+    % 误差融合图按其自身内容收紧，不沿用风险分支所需的留白。
+    \node[data,minimum width=34mm,text width=32mm] (img) at (-52mm,10mm) {多视角图像};
+    \node[data,minimum width=34mm,text width=32mm] (ins) at (-52mm,-4mm) {子任务指令};
+    \node[data,minimum width=34mm,text width=32mm,minimum height=17mm,first] (state) at (-52mm,-23mm)
+      {增广状态\\本体状态与归一化\\视觉停靠误差};
+    \node[process,minimum width=30mm,text width=28mm,minimum height=14mm] (vlm) at (-7mm,-4mm)
+      {VLM主干网络\\编码观测与指令};
+    \node[process,minimum width=30mm,text width=28mm,minimum height=13mm] (expert) at (-7mm,20mm)
+      {动作专家\\条件流匹配};
+    \node[container,fit=(expert)(vlm)] (pi) {};
+    \node[linklabel,text width=16mm] at (-28mm,32mm) {策略模型\\\(\pi_{0.5}\)};
+    \node[process,minimum width=30mm,text width=28mm,minimum height=17mm] (exec) at (44mm,-8mm)
+      {机器人执行\\固定执行步数\(s\)\\再获取新观测};
+    \node[offline,minimum width=58mm,text width=56mm,minimum height=18mm,first] (demo) at (-7mm,48mm)
+      {随机停靠示范集\\固定位姿腕部观测，估计停靠误差\\融合误差输入，微调策略模型};
+
+    \draw[mainarrow] (img.east) -- ([yshift=4mm]vlm.west);
+    \draw[mainarrow] (ins.east) -- (vlm.west);
+    \draw[mainarrow] (state.east) -- ([yshift=-4mm]vlm.west);
+    \draw[mainarrow] (vlm.north) -- node[linklabel,right]{条件信息} (expert.south);
+    \draw[mainarrow,rounded corners=2pt] (expert.east) --
+      node[linklabel,above=1mm]{候选动作序列} (44mm,20mm) -- (exec.north);
+    \draw[influence] (demo.south) -- (pi.north);
+    \draw[feedback] (exec.south) -- (44mm,-40mm) --
+      node[linklabel,below=1mm]{执行后的新观测} (-75mm,-40mm) -- (-75mm,10mm) -- (img.west);
+  \else
+  % 输入、VLM与动作专家保持原图的相对方位。
+  \node[data] (img) at (-56mm,0mm) {多视角图像};
+  \node[data] (ins) at (-56mm,-12mm) {子任务指令};
+  \node[data,minimum width=34mm,text width=32mm,minimum height=18mm,first] (state) at (-55mm,-29mm)
+    {增广状态\\本体状态与归一化\\视觉停靠误差};
+  \node[process,minimum width=30mm,text width=28mm,minimum height=14mm] (vlm) at (-16mm,-12mm)
+    {VLM主干网络\\编码观测与指令};
+  \node[process,minimum width=30mm,text width=28mm,minimum height=14mm] (expert) at (-16mm,10mm)
+    {动作专家\\条件流匹配};
+  \node[container,fit=(expert)(vlm)] (pi) {};
+  \node[linklabel,text width=16mm] at (-31mm,25mm) {策略模型\\\(\pi_{0.5}\)};
+
+  \ifnum\policystage<3
+    \node[process,minimum width=28mm,text width=26mm,minimum height=16mm] (exec) at (56mm,10mm)
+      {机器人执行\\固定执行步数\(s\)\\再获取新观测};
+  \else
+    \node[process,minimum width=28mm,text width=26mm,minimum height=16mm] (exec) at (56mm,10mm)
+      {机器人执行\\执行\(s_i\)步\\再获取新观测};
+  \fi
+  \node[offline,minimum width=64mm,text width=62mm,minimum height=17mm,first] (demo) at (-16mm,39mm)
+    {随机停靠示范集\\固定位姿腕部观测，估计停靠误差\\融合误差输入，微调策略模型};
+
+  \draw[mainarrow] (img.east) -- ([yshift=5mm]vlm.west);
+  \draw[mainarrow] (ins.east) -- (vlm.west);
+  \draw[mainarrow] (state.east) -- ([yshift=-5mm]vlm.west);
+  \draw[mainarrow] (vlm.north) -- node[linklabel,right]{条件信息} (expert.south);
+  \draw[influence] (demo.south) -- (pi.north);
+  \draw[feedback] (exec.north) -- (56mm,54mm) --
+    node[linklabel,above]{执行后的新观测} (-56mm,54mm) -- (img.north);
+
+  % 基础动作通路先成立；调度方法在动作生成与下发之间引入RTC。
+  \ifnum\policystage<3
+    \draw[mainarrow] (expert.east) -- (exec.west);
+    \node[linklabel] at (21mm,24mm) {候选动作序列};
+  \else
+    \node[process,minimum width=22mm,text width=20mm,minimum height=16mm,third] (rtc) at (23mm,10mm)
+      {RTC引导\\生成时约束\\相邻序列};
+    \draw[mainarrow] (expert.east) -- (rtc.west);
+    \draw[mainarrow] (rtc.east) -- (exec.west);
+    \node[linklabel,text width=20mm] at (5mm,25mm) {候选动作\\序列};
+    \node[linklabel,text width=20mm] at (39mm,25mm) {引导后\\动作序列};
+  \fi
+
+  \ifnum\policystage>1
+    % 保存上一轮序列；与当前未施加RTC约束的候选序列比较。
+    \node[retained,minimum width=24mm,text width=22mm,minimum height=14mm,second] (tail) at (23mm,-12mm)
+      {前一序列\\未执行尾部};
+    \node[retained,minimum width=28mm,text width=26mm,minimum height=14mm,second] (difference) at (23mm,-37mm)
+      {相邻序列\\预测偏差\(r_i\)};
+    \coordinate (rawtap) at (5mm,10mm);
+    \coordinate (historytap) at (39mm,10mm);
+    \fill[blue!65!black] (rawtap) circle (0.65pt);
+    \fill[blue!65!black] (historytap) circle (0.65pt);
+    \draw[monitor] (historytap) -- (39mm,-12mm) -- (tail.east);
+    \node[linklabel,text width=9mm,anchor=west] at (40mm,-4mm) {上轮\\尾部};
+    \draw[monitor] (tail.south) -- node[linklabel,right]{对齐比较} (difference.north);
+    \draw[monitor] (rawtap) -- (5mm,-37mm) -- (difference.west);
+    \fill[blue!65!black] (5mm,-37mm) circle (0.65pt);
+
+    % 五项输入均保留可追溯的入边，预测偏差只是风险输入之一。
+    \node[retained,minimum width=62mm,text width=60mm,minimum height=22mm,second] (risk) at (-7mm,-60mm)
+      {轻量风险判别模型\\
+       \(f_{\boldsymbol\psi}(\mathbf z_i,\widehat{\mathbf A}^{\mathrm{raw}}_i,
+       \tilde{\mathbf x}_{t_i},\ell_{t_i},r_i)\)\\
+       输出：失败风险分数\(\rho_i\)};
+    \node[retained,minimum width=28mm,text width=26mm,minimum height=22mm,second] (dec) at (56mm,-60mm)
+      {提前停止判定\\研究预警及时性\\与误报的权衡\\满足条件则停止};
+    \node[offline,minimum width=62mm,text width=60mm,minimum height=14mm,second] (rtrain) at (-7mm,-83mm)
+      {误差注入回合与失败标签\\冻结\(\pi_{0.5}\)，仅训练风险模型};
+
+    \draw[monitor] (vlm.south) -- node[linklabel,left,pos=0.55]{观测特征\(\mathbf z_i\)}
+      (vlm.south |- risk.north);
+    \draw[monitor] (state.south) -- (-55mm,-55mm) --
+      node[linklabel,above]{增广状态} ([yshift=5mm]risk.west);
+    \draw[monitor] (ins.west) -- (-74mm,-12mm) -- (-74mm,-67mm) --
+      node[linklabel,above]{子任务指令} ([yshift=-7mm]risk.west);
+    \draw[monitor] (5mm,-37mm) --
+      node[linklabel,left,pos=0.62]{候选动作\\序列}
+      (5mm,-37mm |- risk.north);
+    \draw[monitor] (difference.south) -- ([xshift=25mm]risk.north);
+    \draw[monitor] (risk.east) -- node[linklabel,above]{风险分数} (dec.west);
+    \draw[influence] (rtrain.north) -- (risk.south);
+
+    \ifnum\policystage=2
+      \draw[monitor] (dec.north) -- node[linklabel,text width=20mm,pos=0.48]{停止或放行} (exec.south);
+    \else
+      % 风险分数调度实际步数，停止路径始终单独保留。
+      \node[retained,minimum width=28mm,text width=26mm,minimum height=19mm,third] (schedule) at (56mm,-29mm)
+        {风险驱动调度\\低风险长步数\\高风险短步数};
+      \draw[monitor] (dec.north) -- node[linklabel,text width=20mm]{放行及风险} (schedule.south);
+      \draw[monitor] (schedule.north) -- node[linklabel,text width=18mm,pos=0.23]{执行步数\(s_i\)} (exec.south);
+      \draw[monitor] (dec.east) -- (73mm,-60mm) --
+        node[linklabel,rotate=90]{提前停止} (73mm,10mm) -- (exec.east);
+      \draw[monitor] (tail.north) -- (rtc.south);
+    \fi
+  \fi
+  \fi
+\end{tikzpicture}

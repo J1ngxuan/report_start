@@ -1,0 +1,52 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  box/.style={rounded corners=2pt,minimum width=34mm,minimum height=13mm,
+    text width=32mm,align=center,inner sep=2.5pt,outer sep=0pt},
+  process/.style={box,draw=blue!60!black,fill=blue!7},
+  robot/.style={box,draw=orange!75!black,fill=orange!10},
+  decide/.style={box,draw=red!55!black,fill=red!4},
+  offline/.style={box,draw=gray!65,fill=gray!8},
+  mainarrow/.style={->,thick,blue!70!black},
+  alarm/.style={->,thick,red!65!black},
+  feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
+  influence/.style={->,densely dashed,gray!70!black,rounded corners=2pt},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
+    text=blue!65!black},
+  errlabel/.style={linklabel,text=red!60!black},
+  vallabel/.style={linklabel,text=orange!80!black},
+  offlabel/.style={linklabel,text=gray!70!black}
+]
+  % 离线行
+  \node[offline] (data) at (-46mm,26mm) {\textbf{误差注入回合记录}\\特征、动作提议与\\成功/失败标签\(y_i\)};
+  \node[offline] (train) at (0,26mm) {\textbf{离线训练风险判别模型}\\\(\pi_{0.5}\)冻结，只优化\(\boldsymbol\psi\)};
+  \node[offline] (thr) at (-46mm,-26mm) {\textbf{停止判据研究}\\验证集比较\\预警及时性与误报};
+  % 在线行
+  \node[process] (pi) at (-46mm,0) {\textbf{\(\pi_{0.5}\)前向推理}\\观测特征\(\mathbf z_i\)、\\动作提议\(\widehat{\mathbf A}^{\mathrm{raw}}_i\)};
+  \node[process] (feat) at (0,0) {\textbf{风险输入\(\boldsymbol\zeta_i\)}\\增广状态\(\tilde{\mathbf x}_t\)、指令\(\ell_t\)、\\预测偏差量\(r_i\)};
+  \node[process] (risk) at (46mm,0) {\textbf{风险判别模型\(f_{\boldsymbol\psi}\)}\\风险分数\(\rho_i\)\\分析时间变化};
+  \node[robot] (exec) at (0,-26mm) {\textbf{下发并执行}\\执行\(s\)步后获取新观测};
+  \node[decide] (dec) at (46mm,-26mm) {\textbf{提前停止判定}\\结合风险及其变化\\判断是否继续操作};
+  \node[robot] (stop) at (46mm,-52mm) {\textbf{提前停止}\\终止操作\\评价风险抑制效果};
+
+  % 在线流程
+  \draw[mainarrow] (pi) -- (feat);
+  \draw[mainarrow] (feat) -- (risk);
+  \draw[mainarrow] (risk) -- (dec);
+  \draw[mainarrow] (dec) -- node[linklabel,above]{否} (exec);
+  \draw[alarm] (dec) -- node[errlabel,right=1mm]{是} (stop);
+  \draw[feedback] (exec.north) -- ([yshift=6mm]exec.north) -|
+    node[pos=0.25,vallabel,above]{新观测进入下一次推理} (pi.south);
+
+  % 离线到在线
+  \draw[influence] (pi.north) -- node[offlabel,right=1mm]{误差试验数据} (data.south);
+  \draw[influence] (data) -- node[offlabel,above]{样本与标签} (train);
+  \draw[influence] (train.east) -| node[pos=0.25,offlabel,above]{参数\(\boldsymbol\psi\)} ([xshift=-8mm]risk.north);
+  \draw[influence] (thr.south) |- node[pos=0.75,offlabel,above]{判定依据}
+    ([xshift=-12mm,yshift=-7mm]dec.south) -- ([xshift=-12mm]dec.south);
+
+  \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(data)(train),
+    inner sep=2mm,label={[font=\footnotesize,text=gray!70!black]above left:离线训练}] {};
+  \node[draw=gray!50,densely dashed,rounded corners=3pt,fit=(thr),
+    inner sep=2mm,label={[font=\footnotesize,text=gray!70!black]below left:判据研究}] {};
+\end{tikzpicture}

@@ -1,0 +1,74 @@
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2.2mm]},
+  box/.style={rounded corners=2pt,align=center,inner sep=2.5pt,outer sep=0pt},
+  plant/.style={box,draw=orange!75!black,fill=orange!10,
+    minimum width=34mm,minimum height=14mm,text width=32mm},
+  flow/.style={box,draw=blue!60!black,fill=blue!7,
+    minimum width=36mm,minimum height=23mm,text width=34mm},
+  method/.style={box,draw=blue!60!black,fill=blue!7,thick,
+    minimum width=43mm,minimum height=27mm,text width=41mm},
+  layer/.style={draw=black!45,densely dashed,rounded corners=3pt,inner sep=1.5mm},
+  layerlabel/.style={font=\footnotesize,text=black!60,rotate=90,anchor=south},
+  mainarrow/.style={->,thick,blue!70!black},
+  feedback/.style={->,thick,orange!80!black,rounded corners=3pt},
+  depend/.style={->,densely dashed,blue!60!black},
+  linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,text=blue!65!black},
+  clearlabel/.style={font=\footnotesize,inner sep=0pt,text=blue!65!black},
+  flabel/.style={linklabel,text=orange!80!black}
+]
+  % 任务与平台层
+  \node[plant] (a1) at (-52mm,0) {\textbf{PCBA上下料}\\\textbf{五子任务链}};
+  \node[plant] (a2) at (0,0) {\textbf{基于激光雷达的}\\\textbf{导航与停靠}};
+  \node[plant] (a3) at (52mm,0) {\textbf{轮式双臂}\\\textbf{机器人}};
+  \node[layer,fit=(a1)(a3)] (la) {};
+  \node[layerlabel] at (la.west) {任务与平台};
+  \draw[feedback] (a1) -- node[flabel,above]{任务序列} (a2);
+  \draw[feedback] (a2) -- node[flabel,above]{停靠误差} (a3);
+
+  % 策略模型层
+  \node[flow] (b1) at (-52mm,-26mm) {\textbf{示范采集与策略微调}\\VR遥操作示范\\基于OpenPI微调\\\mbox{策略模型\(\pi_{0.5}\)}};
+  \node[flow] (b2) at (0,-26mm) {\textbf{\mbox{策略模型\(\pi_{0.5}\)}推理}\\输入观测、状态\\及任务指令\\生成\mbox{动作序列\(\widehat{\mathbf A}_t\)}};
+  \node[flow] (b3) at (52mm,-26mm) {\textbf{动作序列执行}\\接收\mbox{动作序列\(\widehat{\mathbf A}_t\)}\\按\mbox{执行步数\(s_i\)}执行\\输出机器人控制指令};
+  \node[layer,fit=(b1)(b3)] (lb) {};
+  \node[layerlabel] at (lb.west) {策略模型};
+  \draw[mainarrow] (a1) -- node[linklabel,right=1mm]{任务指令\(\ell_t\)} (b1);
+  \draw[mainarrow] (b1) -- node[clearlabel,above=2.5mm]{微调参数} (b2);
+  \draw[mainarrow] (b2) -- node[clearlabel,above=2.5mm]{动作序列} (b3);
+  \draw[feedback] ([xshift=4mm]b3.north) -- node[flabel,right=1mm]{机器人控制指令} ([xshift=4mm]a3.south);
+  \draw[feedback] ([xshift=-4mm]a3.south) -- ++(0,-6mm) -|
+    node[flabel,above,pos=0.25]{观测\(\mathbf o_t\)与状态\(\mathbf x_t\)} (b2.north);
+
+  % 鲁棒增强方法层
+  \node[method] (m1) at (-52mm,-60mm) {\textbf{基于停靠误差融合输入}\\\textbf{的泛化训练方法}\\随机停靠示范\\腕部视觉误差输入\\\mbox{增广状态\(\tilde{\mathbf x}_t\)}\\固定位姿工位观测};
+  \node[method] (m2) at (0,-60mm) {\textbf{基于增广状态输入的}\\\textbf{风险判别模型}\\\mbox{风险模型\(f_{\boldsymbol\psi}\)}\\输出\mbox{风险分数\(\rho_i\)}\\研究预警及时性\\与提前停止};
+  \node[method] (m3) at (52mm,-60mm) {\textbf{基于在线风险预测的}\\\textbf{动作序列调度方法}\\\mbox{在线风险分数\(\rho_i\)}\\调度\mbox{执行步数\(s_i\)}\\\mbox{实时动作分块（RTC）}\\衔接相邻动作序列};
+  \node[layer,fit=(m1)(m3)] (lc) {};
+  \node[layerlabel] at (lc.west) {鲁棒增强方法};
+  \draw[mainarrow] (m1.north) -- node[linklabel,right=1mm]{增广训练集} (b1.south);
+  \draw[mainarrow] ([xshift=-1mm]b2.south) -- node[linklabel,left=1mm]{风险模型输入} ([xshift=-1mm]m2.north);
+  \coordinate (stopout) at ([xshift=9mm]m2.north);
+  \coordinate (stopturn1) at ([xshift=9mm,yshift=7mm]m2.north);
+  \coordinate (stopin) at ([xshift=-9mm]b3.south);
+  \coordinate (stopturn2) at (stopturn1 -| stopin);
+  \draw[mainarrow] (stopout) -- (stopturn1) --
+    node[clearlabel,below=1mm]{提前停止} (stopturn2) -- (stopin);
+  \draw[mainarrow] (m3.north) -- node[linklabel,right=1mm]{执行步数\(s_i\)} (b3.south);
+
+  \coordinate (m1out) at ([xshift=5mm]m1.south);
+  \coordinate (m1eval) at ([xshift=-5mm]m1.south);
+  \coordinate (m2in) at ([xshift=-5mm]m2.south);
+  \coordinate (m2out) at ([xshift=5mm]m2.south);
+  \coordinate (m3in) at ([xshift=-5mm]m3.south);
+  \coordinate (m3eval) at ([xshift=5mm]m3.south);
+  \coordinate (d12a) at (-47mm,-77mm);
+  \coordinate (d12b) at (-5mm,-77mm);
+  \coordinate (d23a) at (5mm,-83mm);
+  \coordinate (d23b) at (47mm,-83mm);
+  \coordinate (d13a) at (-57mm,-89mm);
+  \coordinate (d13b) at (57mm,-89mm);
+  \draw[depend] (m1out) -- (d12a) -- node[clearlabel,below=1mm]{误差注入训练样本} (d12b) -- (m2in);
+  \draw[depend] (m2out) -- (d23a) -- node[linklabel,above]{风险分数用于调度} (d23b) -- (m3in);
+  \draw[depend] (m1eval) -- (d13a) -- node[linklabel,above]{误差容忍曲线用于统一评价} (d13b) -- (m3eval);
+
+\end{tikzpicture}

@@ -35,7 +35,7 @@
   % 顶行：误差传递链，顺序与总体技术路线图一致
   \node[error,above=15mm of sense] (e2) {精细操作阶段显现};
   \node[error,left=11mm of e2] (e1) {工位停靠误差};
-  \node[error,right=11mm of e2] (e3) {错误动作持续};
+  \node[error,right=11mm of e2] (e3) {碰撞失败或保守低效};
   \draw[errarrow] (e1.east) -- node[errlabel,above]{传递} (e2.west);
   \draw[errarrow] (e2.east) -- node[errlabel,above]{放大} (e3.west);
 
@@ -48,7 +48,7 @@
     node[errlabel,above]{与装配公差同量级}
     ([xshift=-9mm]exec.north |- mid) -- ([xshift=-9mm]exec.north);
   \draw[influence] (e3.south) -- (e3.south |- mid2) --
-    node[errlabel,above]{块内无反馈}
+    node[errlabel,above]{块内无反馈、固定时域}
     ([xshift=3mm]exec.north |- mid2) -- ([xshift=3mm]exec.north);
 
   \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e2)(e3),

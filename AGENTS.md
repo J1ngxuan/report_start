@@ -1,26 +1,85 @@
-# Repository Guidelines
+# 仓库协作指南
 
-## Project Structure & Module Organization
+## 项目定位与内容依据
 
-`report.tex` is the XeLaTeX entry point. Edit report metadata in `front/cover.tex` and the proposal text in `body/proposal.tex`; keep bibliography records in `reference.bib`. Store publication-ready images and TikZ sources in `figures/`, and document the provenance of borrowed figures in `figures/README.md`. The `scripts/` directory contains Python utilities for generating figures. Files under `reference/` are source material, while `tmp/` is working output for visual checks and should normally not be committed. Avoid modifying `hithesisart.cls`, `hithesisart.cfg`, or `hithesis.bst` unless the template itself must change.
+本仓库用于撰写哈尔滨工业大学哈尔滨校区硕士学位开题报告，基于 hithesis v3.1e，主要产物为 `report.pdf`。当前课题为“面向PCBA上下料的轮式双臂模仿学习策略鲁棒性改进研究”。`scripts/` 仅提供插图生成工具，机器人训练与部署代码不在本仓库中。
 
-## Build, Test, and Development Commands
+- 修改研究内容前先阅读 `description.md`，以其确定当前研究主线，再核对 `body/proposal.tex` 中的具体定义、公式和实验协议。发现两者冲突时应明确指出，避免静默混合不同版本。
+- `outline.md` 已标注为旧课题大纲，仅作历史参考；`研究内容与代码边界.md` 中的平台与数据流程可供核对，强化学习、PPO、残差策略等旧方向不属于当前研究主线。
+- `CLAUDE.md` 包含旧方案、旧文件状态及其他机器的环境路径，使用前须对照当前文件验证，不能直接复制其中的研究结论或环境假设。
+- `README.md` 是模板使用说明；`reference/` 是源材料，其中他人的开题报告仅供格式与栏目参考。若本地存在 `reference_papers/`，可用于查阅论文与笔记，但笔记作者的建议不能当作论文原文观点。
 
-- `latexmk`: compile `report.tex` with XeLaTeX and produce `report.pdf`.
-- `latexmk -c report.tex`: remove intermediate LaTeX files while preserving the PDF.
-- `latexmk -C report.tex`: remove intermediate files and the generated PDF.
-- `python scripts/visualize_right_hand.py data.hdf5 --output-dir figures/right_hand_visualization`: regenerate the right-hand trajectory assets; requires `h5py`, `numpy`, and Pillow.
+## 当前研究主线与写作边界
 
-Run commands from the repository root. The build uses shell escape, as configured in `latexmkrc`.
+研究围绕“停靠误差 → 精细操作阶段显现 → 碰撞失败或保守低效”，依次开展三项改进，名称与顺序保持一致：
 
-## Coding Style & Naming Conventions
+1. **基于停靠误差融合输入的泛化训练方法**：随机停靠扩展示范覆盖，将归一化定位误差拼入策略状态；区分导航命令、定位估计与独立测得的参考误差。
+2. **基于增广状态输入的风险判别模型**：在冻结的 `\(\pi_{0.5}\)` 上训练轻量风险模型，在动作序列下发前预测失败风险，达到条件时提前停止。相邻动作序列的预测偏差是模型输入之一，不应把方法简化成仅靠时序集成不一致度阈值判断。
+3. **基于在线风险预测的动作序列调度方法**：使用第二项的风险分数动态调整实际执行步数，以 RTC 衔接相邻动作序列，保留提前停止机制。按阶段固定切换执行长度是对照方案。
 
-Keep TeX files UTF-8 encoded. Follow the existing two-space indentation inside environments and place one logical sentence or command per line when practical. Use descriptive, lowercase labels such as `fig:research-entry-route` and stable lowercase BibTeX keys such as `schulman2017ppo`. Name new figure files with lowercase kebab-case. Python follows PEP 8, four-space indentation, type hints, `snake_case` functions, and `UPPER_CASE` constants.
+整体验证以基线为参照，依次研究停靠误差融合、风险判别和风险驱动调度的作用，统一误差注入原则、任务链与评价指标，不使用字母数字配置代号。开题报告重点阐明研究问题、研究思路、方法关系与拟验证内容；保留必要的数学定义和对照逻辑，不将尚待研究的方法写成已经确定的工程接口、固定阈值算法或控制动作模板。当前正文以 OpenPI 的 `\(\pi_{0.5}\)` 为统一部署模型和实验对象；ACT 可作为方法背景与前期工作，不擅自增加为主实验模型。
 
-## Testing Guidelines
+任务链为四个物理工位上的五个操作子任务：上料百叶车取板、扫码、检测台取旧板、检测台放新板、下料百叶车放板；检测台取放共用一次停靠。避免将五个子任务直接写成五个独立物理工位，工位间导航不计入 VLA 动作阶段。
 
-There is no automated test framework or coverage target. Every content or template change must pass `latexmk` without errors or unresolved-reference warnings. Open `report.pdf` and inspect changed pages for clipping, misplaced floats, font substitution, broken citations, and image readability. For Python utilities, run the script against a representative HDF5 episode and verify all expected PNG and README outputs.
+“已完成的学术研究/实践工作”只陈述有依据的平台、VR 数采、模型微调及实体机器人接口集成和功能验证。三项改进及其正式对比实验属于拟开展工作，不写成已验证有效。预期目标保持定性表述，不编造性能数值、实验结果或新增数值占位。文献结论、本课题推断和前期观察应明确区分。
 
-## Commit & Pull Request Guidelines
+## 文件组织与修改范围
 
-Recent history uses brief Chinese summaries such as `精简正文` and `修复编译错误，新增数据集示例`. Keep commits focused and use a short imperative summary describing the result. Pull requests should explain the affected sections, list the validation command, and note any template or bibliography changes. Include screenshots or page numbers for layout-sensitive edits, and do not commit LaTeX intermediates or scratch renderings.
+- `report.tex`：XeLaTeX 入口，配置学位、校区、开题阶段、宏包及标题格式，再载入封面和正文。当前配置为 `toc=true,type=master,stage=opening,campus=harbin`，中文字体由 CTeX 按平台选择。
+- `front/cover.tex`：封面元数据；`\hitsetup{...}` 的键值列表内不留空行。保留已填写信息，除非任务要求修改。
+- `body/proposal.tex`：唯一正文文件。保留现有九个一级栏目及顺序，使用 `\section`、`\subsection`、`\paragraph`，不引入 `\chapter`。
+- `reference.bib`：正文参考文献数据库；由 BibTeX 与 `hithesis.bst` 处理。
+- `figures/`：正式插图与 TikZ 源码；`figures/README.md` 登记外部图片的来源、原图号、版本及裁剪、翻译或重绘说明。
+- `scripts/visualize_right_hand.py`：HDF5 示范回合的右手轨迹与截图生成工具。
+- `tmp/`：构建排查、页面渲染和视觉校对输出，不新增提交临时文件。
+
+优先在 `report.tex` 中做必要的排版定制。除非模板本身必须修改，不改 `hithesisart.cls`、`hithesisart.cfg` 或 `hithesis.bst`。
+
+## 编译与验证
+
+所有命令从仓库根目录运行：
+
+```powershell
+latexmk
+latexmk -c report.tex
+```
+
+`latexmkrc` 已设置默认入口与 XeLaTeX，启用 shell escape；参考文献使用 BibTeX，不使用 biber。第二条命令清理中间文件并保留 PDF；`latexmk -C report.tex` 会连同 PDF 一并删除，仅在确需完整清理时使用。环境缺少命令时先检查当前机器的工具路径，不沿用其他机器的绝对路径，也不改用不兼容的编译引擎。
+
+正文、封面、公式、引用、图片或模板变化后必须：
+
+1. 运行 `latexmk`，确认无编译错误、未定义引用或未定义文献警告。
+2. 检查 `report.log` 中的 `Overfull`、字体替换及其他相关警告，修复改动引入的问题。可用 `rg -n 'Overfull|undefined|Font Warning' report.log` 定位；无匹配时 `rg` 返回 1 属正常情况。
+3. 打开 `report.pdf` 检查改动页以及受浮动体影响的相邻页，确认没有裁切、标注重叠、错位、乱码、引用异常和图片不可读问题。需要逐页渲染时，将结果放入 `tmp/` 下按批次命名的目录。
+
+仅修改 `AGENTS.md` 等不参与排版的说明文件时，核对内容与 `git diff --check` 即可，无需重新编译报告。仓库没有自动化测试框架或 CI，不为普通文字修改新增测试框架。
+
+## TeX、引用与图表约定
+
+- 文件保持 UTF-8，环境内沿用两空格缩进，尽量一条逻辑句或命令一行。中文表达采用准确、直接的学术用语，方法名称、符号和实验配置在正文与图表中保持一致。
+- 行内数学使用 `\(...\)`；标题含数学时使用 `\texorpdfstring` 提供书签文本。变量解释以“式中，”或“其中，”引出，长公式优先用 `aligned` 换行。
+- 正文引用使用 `\cite{key}`，多篇合并为一个命令，不手工叠加上标。公式引用使用 `式\eqref{...}`，图表使用 `\ref`，不硬编码编号。
+- 标签采用 `sec:`、`subsec:`、`fig:`、`tab:`、`eq:` 等前缀与小写 kebab-case；BibTeX key 沿用稳定的小写作者年份命名，如 `black2025pi05`。
+- 新增文献须核对原始来源、作者、年份、标题与标识符，避免把笔记推断写成文献主张。`hithesis.bst` 未定义 `misc` 类型；arXiv 预印本沿用 `black2024pi0` 的 `@techreport` 格式，填写相应 `institution`、`number` 与 `url`。不因暂未引用而删除旧条目。
+- TikZ 文件为裸 `tikzpicture` 片段，以 `\input{figures/文件名}` 引入，由 `report.tex` 统一加载宏包和库，随主文档编译。修改示意图时同步核对节点文案、箭头关系、图题和正文引用。
+- 位图与 PDF 使用 `\includegraphics{文件名}`，通过 `\graphicspath{{figures/}}` 查找；子目录资源保留相对路径。新图文件名使用小写 kebab-case，保留脚本既有输出命名。
+- 沿用 `[htbp]` 浮动体、中文图题以及必要的 `\FloatBarrier`；借用论文图片时在图题中引用文献，并在 `figures/README.md` 补充溯源记录。
+- 表格沿用 `longtable` 与 `booktabs`，跨页表提供续表表头；列宽以当前版心为限，避免靠整体缩小字号解决溢出。
+
+## 插图脚本
+
+```powershell
+python scripts/visualize_right_hand.py <episode.hdf5> --output-dir figures/right_hand_visualization
+```
+
+将 `<episode.hdf5>` 替换为实际路径。运行环境须安装 `h5py`、`numpy` 与 Pillow；HDF5 至少包含 `right_arm_image`、`robot_pose` 和 `progress`。脚本按左右手各七维解析位姿，具体字段顺序与姿态约定见脚本说明，不能把该推断推广为所有数据集的格式。
+
+脚本生成三张回合截图、`right_hand_trajectory.png`、`right_hand_overview.png` 和数据摘要 `README.md`；该摘要由脚本覆盖生成，应通过修改脚本或输入数据更新。可用 `--frames` 指定三个逗号分隔的帧索引。Python 改动遵循 PEP 8、四空格缩进、类型标注、snake_case 函数名及 UPPER_CASE 常量名；修改后用代表性回合运行并检查所有输出，尤其检查当前平台的字体可用性。
+
+## Git 与交付
+
+开始修改前检查 `git status --short`，保留已有的未提交内容和暂存删除，不覆盖、不回退与任务无关的修改。提交范围应聚焦当前任务。
+
+`.gitignore` 已忽略 `/report.pdf`、`/tmp/` 和 `/reference_papers/`，但 `report.pdf` 和部分历史临时文件仍被 Git 跟踪；忽略规则不会自动取消已有跟踪。编译后检查实际差异，不自动删除历史文件或修改索引。不要新增提交 LaTeX 中间文件、Python 缓存、锁文件或临时渲染；正式插图仍应随对应正文交付。
+
+提交信息沿用简短中文结果描述，如“统一风险判别方法表述”。PR 或交付说明交代受影响章节、验证命令及结果，注明模板或文献变更；版面敏感修改提供页码或截图。未执行的验证须如实说明。

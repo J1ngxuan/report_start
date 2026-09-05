@@ -1,0 +1,63 @@
+\begin{tikzpicture}[
+  font=\small,x=0.93cm,y=0.82cm,
+  >={Stealth[length=2.2mm]},
+  exec/.style={fill=blue!55!black,draw=blue!60!black},
+  pend/.style={fill=blue!12,draw=blue!60!black},
+  delay/.style={fill=orange!60,draw=orange!80!black},
+  infer/.style={->,thick,orange!80!black},
+  riskline/.style={thick,red!65!black},
+  thr/.style={densely dashed,gray!60!black},
+  note/.style={font=\footnotesize,align=center}
+]
+  % 上部：假设风险变化，用于说明研究思路
+  \draw[->,thick] (0,5.6) -- (0,8.4) node[above,font=\footnotesize]{\(\rho_i\)};
+  \draw[riskline] (0.4,5.9) -- (2.5,5.95) -- (4.6,6.1) -- (5.3,6.4) -- (6.0,6.7)
+    -- (6.7,6.95) -- (7.4,7.2) -- (8.1,7.3) -- (8.8,7.35) -- (9.5,7.4)
+    -- (10.2,7.7) -- (10.9,7.95);
+  \fill[red!65!black] (10.9,7.95) circle (1.6pt);
+  \node[note,text=red!60!black,anchor=south east] at (10.7,8.0) {\scriptsize 满足停止判据：提前停止};
+  \draw[densely dashed,gray!60!black] (4.6,5.6) -- (4.6,8.2);
+  \draw[densely dashed,red!40] (10.9,-0.5) -- (10.9,7.9);
+
+  % 区域说明
+  \fill[gray!10] (0.2,-0.5) rectangle (4.6,4.0);
+  \fill[red!5] (4.6,-0.5) rectangle (12.4,4.0);
+  \draw[densely dashed,gray!60!black] (4.6,-0.5) -- (4.6,4.0);
+  \node[note,anchor=south west,text=gray!60!black] at (0.3,4.1)
+    {低风险：适当延长执行区间\\减少推理次数};
+  \node[note,anchor=south west,text=red!60!black] at (4.75,4.1)
+    {风险升高：适当缩短执行区间\\更快引入新观测};
+
+  % 时间轴
+  \draw[->,thick] (0,0) -- (12.7,0) node[below left,font=\footnotesize]{\(t\)};
+  \foreach \x in {0.4,1.1,...,12.3} \draw (\x,0.06) -- (\x,-0.06);
+  % 低风险：两条长块
+  \draw[pend] (0.4,0.5) rectangle (3.2,0.85);
+  \draw[exec] (0.4,0.5) rectangle (2.5,0.85);
+  \draw[infer] (0.4,-0.45) -- (0.4,-0.05);
+  \draw[pend] (2.5,1.0) rectangle (5.3,1.35);
+  \draw[exec] (2.5,1.0) rectangle (4.6,1.35);
+  \draw[infer] (2.5,-0.45) -- (2.5,-0.05);
+  % 风险升高：执行段逐次缩短
+  \foreach \s/\y/\len in {4.6/1.5/1.4,6.0/2.0/1.05,7.05/2.5/0.7,7.75/3.0/0.7,8.45/3.5/0.7} {
+    \draw[pend] (\s,\y) rectangle (\s+2.8,\y+0.35);
+    \draw[exec] (\s,\y) rectangle (\s+\len,\y+0.35);
+    \draw[infer] (\s,-0.45) -- (\s,-0.05);
+  }
+  \draw[infer] (9.15,-0.45) -- (9.15,-0.05);
+  \draw[infer] (9.85,-0.45) -- (9.85,-0.05);
+  \draw[infer] (10.55,-0.45) -- (10.55,-0.05);
+  \draw[pend] (9.15,1.0) rectangle (11.95,1.35);
+  \draw[exec] (9.15,1.0) rectangle (9.85,1.35);
+  \draw[pend] (9.85,1.5) rectangle (12.4,1.85);
+  \draw[exec] (9.85,1.5) rectangle (10.55,1.85);
+  \draw[pend] (10.55,2.0) rectangle (12.4,2.35);
+  \draw[exec] (10.55,2.0) rectangle (10.9,2.35);
+  \node[note,text=red!60!black,anchor=west] at (11.0,2.55) {\scriptsize 停止};
+
+  % 图例
+  \node[note,anchor=north west] at (0.2,-0.6) {%
+    \tikz\draw[exec] (0,0) rectangle (0.4,0.22); 实际执行区间\(s_i\)\quad
+    \tikz\draw[pend] (0,0) rectangle (0.4,0.22); 未执行尾部（用于RTC连续衔接）};
+  \node[note,anchor=north west] at (0.2,-1.3) {推理启动由箭头示意；曲线与区间仅说明研究思路，不表示实验结果};
+\end{tikzpicture}

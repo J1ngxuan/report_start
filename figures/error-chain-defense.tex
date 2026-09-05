@@ -7,37 +7,32 @@
   defense/.style={draw=blue!60!black,rounded corners=2pt,fill=blue!7,
     minimum width=36mm,minimum height=15mm,text width=34mm,
     align=center,inner sep=2.5pt,outer sep=0pt},
-  validate/.style={draw=orange!75!black,rounded corners=2pt,fill=orange!10,
-    minimum height=9mm,text width=112mm,align=center,inner sep=2.5pt,
-    outer sep=0pt},
   errarrow/.style={->,thick,red!65!black},
   block/.style={->,thick,blue!70!black},
   depend/.style={->,densely dashed,blue!60!black},
-  toval/.style={->,densely dashed,orange!80!black},
   linklabel/.style={font=\footnotesize,fill=white,inner sep=1pt,
     text=blue!65!black}
 ]
   \node[error] (e1) {工位停靠误差};
   \node[error,right=11mm of e1] (e2) {精细操作阶段显现};
-  \node[error,right=11mm of e2] (e3) {错误动作持续};
+  \node[error,right=11mm of e2] (e3) {碰撞失败或保守低效};
   \draw[errarrow] (e1.east) -- node[linklabel,text=red!60!black,above]{传递} (e2.west);
   \draw[errarrow] (e2.east) -- node[linklabel,text=red!60!black,above]{放大} (e3.west);
 
-  \node[defense,below=11mm of e1] (d1) {\textbf{误差补偿}\\\textbf{学习方法}};
-  \node[defense,below=11mm of e2] (d2) {\textbf{分阶段}\\\textbf{执行方法}};
-  \node[defense,below=11mm of e3] (d3) {\textbf{失败检测与}\\\textbf{恢复方法}};
-  \draw[block] (d1.north) -- node[linklabel,right=1mm]{削减源头误差} (e1.south);
-  \draw[block] (d2.north) -- node[linklabel,right=1mm]{缩短开环区间} (e2.south);
-  \draw[block] (d3.north) -- node[linklabel,right=1mm]{截断失败执行} (e3.south);
+  \node[defense,below=11mm of e1] (d1) {\textbf{基于停靠误差融合}\\\textbf{输入的泛化训练方法}};
+  \node[defense,below=11mm of e2] (d2) {\textbf{基于增广状态输入}\\\textbf{的风险判别模型}};
+  \node[defense,below=11mm of e3] (d3) {\textbf{基于在线风险预测}\\\textbf{的动作序列调度方法}};
+  \draw[block] (d1.north) -- node[linklabel,right=1mm]{增强偏差适应能力} (e1.south);
+  \draw[block] (d2.north) -- node[linklabel,right=1mm]{预测风险提前停止} (e2.south);
+  \draw[block] (d3.north) -- node[linklabel,right=1mm]{按风险调节执行时域} (e3.south);
 
   \draw[depend] (d1.south) to[out=-90,in=-90,looseness=0.7]
-    node[linklabel,below]{容忍曲线作为评价基准} (d2.south);
+    node[linklabel,below]{误差注入回合作为训练样本} (d2.south);
   \draw[depend] (d2.south) to[out=-90,in=-90,looseness=0.7]
-    node[linklabel,below]{密集重叠预测作为失败信号} (d3.south);
+    node[linklabel,below]{风险分数作为调度依据} (d3.south);
   \draw[depend] ([xshift=-6mm]d1.south) to[out=-90,in=-90,looseness=0.55]
-    node[linklabel,below]{误差注入提供可控失败样本} ([xshift=6mm]d3.south);
+    node[linklabel,below]{容忍曲线作为评价基准} ([xshift=6mm]d3.south);
 
-  \node[validate,below=26mm of d2] (val) {逐层叠加验证：C0基线 \(\rightarrow\) C1误差补偿 \(\rightarrow\) C2分阶段执行 \(\rightarrow\) C3检测与恢复\\相同误差注入协议与五子任务链};
   \node[draw=red!50!black,densely dashed,rounded corners=3pt,fit=(e1)(e2)(e3),inner sep=2.5mm,
     label={[font=\footnotesize,text=red!60!black]above left:误差传递链}] {};
 \end{tikzpicture}

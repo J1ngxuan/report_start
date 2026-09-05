@@ -17,25 +17,25 @@
   errlabel/.style={linklabel,text=red!60!black},
   vallabel/.style={linklabel,text=orange!80!black}
 ]
-  \node[stage] (pipeline) {\textbf{已完成\(\pi_{0.5}\)}\\\textbf{接口集成}\\单回合已验证};
+  \node[stage] (pipeline) {\textbf{前期研究基础}\\示范采集与微调\\单回合功能验证};
   \node[stage,right=9mm of pipeline] (observe) {\textbf{实体机器人失败观测}\\精细阶段失败};
   \node[stage,right=9mm of observe] (chain) {\textbf{工位停靠误差}\\\textbf{传递链}\\三环节依次传递};
-  \node[stage,right=9mm of chain] (defense) {\textbf{误差补偿学习}\\\textbf{分阶段执行}\\\textbf{失败检测与恢复}};
-  \draw[mainarrow] (pipeline.east) -- node[linklabel,above]{部署} (observe.west);
+  \node[stage,right=9mm of chain] (defense) {\textbf{停靠误差融合}\\\textbf{增广状态风险判别}\\\textbf{风险驱动调度}};
+  \draw[mainarrow] (pipeline.east) -- node[linklabel,above]{试验} (observe.west);
   \draw[mainarrow] (observe.east) -- node[linklabel,above]{归纳} (chain.west);
   \draw[mainarrow] (chain.east) -- node[linklabel,above]{应对} (defense.west);
 
   \node[issue,below=10mm of pipeline] (dataissue) {示范仅在名义\\停靠位姿下采集};
   \node[issue,below=10mm of observe] (failissue) {误差与失败概率\\尚待分档量化};
   \node[issue,below=10mm of chain,minimum width=38mm,minimum height=14mm,text width=36mm]
-    (chainissue) {状态无显式误差输入\\序列内无观测反馈};
-  \node[metric,below=10mm of defense] (metric) {容忍边界\(R_{80}\)\\检测·恢复·时延};
+    (chainissue) {状态无显式误差输入\\无风险预测与调度};
+  \node[metric,below=10mm of defense] (metric) {误差容忍曲线\\风险预测·成功率·时延};
   \draw[issuearrow] (dataissue.north) -- node[errlabel,right=1mm]{数据缺口} (pipeline.south);
   \draw[issuearrow] (failissue.north) -- node[errlabel,right=1mm]{量化缺口} (observe.south);
   \draw[issuearrow] (chainissue.north) -- node[errlabel,right=1mm]{机制缺口} (chain.south);
   \draw[toval] (metric.north) -- node[vallabel,right=1mm]{评价指标} (defense.south);
 
   \draw[feedback] (metric.south) -- ([yshift=-6mm]metric.south) --
-    node[vallabel,above]{根据验证结果修订示范采集规范与部署配置}
+    node[vallabel,above]{分析研究假设、方法贡献与适用条件}
     ([yshift=-6mm]dataissue.south) -- (dataissue.south);
 \end{tikzpicture}
